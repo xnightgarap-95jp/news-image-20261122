@@ -1,395 +1,432 @@
 # The World in One Day — Sunday 22 November 2026
 
-One newspaper front page for Sunday 22 November 2026: **34 stories from
-7 regions**, drawn by `main.py` into `entry.png` (1024x1024). Every story
-below happened, or was first reported, on Sunday 22 November 2026.
-Several broke late on Saturday 21 November and were reported on Sunday;
-the date-check box at the end lists what was deliberately left out.
+One newspaper front page for Sunday 22 November 2026: **35 stories from
+6 regions**, drawn by `main.py` into `entry.png` (1024x1024). Every story
+below happened, or was first reported, on Sunday 22 November 2026. Each
+story is backed by at least two independent sources, named after it.
 
-Each story is backed by at least two independent reports. Sources were
-checked on 22 November 2026.
+## How to read the page
 
-## Middle East (5 stories)
+- **The three lead stories (1–3)** are the day's biggest: the war in the
+  Gulf, the climate talks in Antalya, and the largest Russian air attack
+  of the war on Ukraine.
+- **Ten medium stories (4–13)** are the rest of the front page, each with
+  its own drawn scene and a numbered pin on the map.
+- **Also today (14–35)** is the rest of the day in one line each.
+- **Date check** at the bottom lists stories that were deliberately left
+  out because they belong to other days.
 
-### 1. Iran strikes US bases in the Gulf
-Late on Saturday 21 November, Iran's Revolutionary Guard fired missiles
-and drones at US positions in Bahrain (al-Riffa and Awali bases, Fifth
-Fleet HQ), Kuwait (Ali Al Salem Air Base) and Jordan (Azraq, where five
-missiles were shot down). US Central Command said almost all were
-intercepted, with no US casualties and no base damage. A civilian
-industrial facility in Bahrain was hit and caught fire; no one was hurt.
-Iran claimed 21 US sites were targeted.
-- ANI / WebIndia123, 22 Nov 2026
-- Al Jazeera (via WebIndia123), 22 Nov 2026
-- Daily360, 22 Nov 2026
-- Philippine Daily Post, 22 Nov 2026, 07:00
+## The three leads
 
-### 2. Aid van hit in Gaza City
-An Israeli drone strike on Saturday 21 November hit a van in Tel
-al-Hawa, Gaza City, killing three people. Gaza's health ministry and
-eyewitnesses said the vehicle carried papers and food for World Central
-Kitchen; the charity says the vehicle was not affiliated with it. The
-IDF said it struck three Palestinian Islamic Jihad members posing as aid
-workers. The October 2025 ceasefire remains formally in place.
-- Reuters, 21 Nov 2026
-- AFP (via EuropeSays), 21 Nov 2026
-- Al Jazeera, 21 Nov 2026
-- The Media Line, 21 Nov 2026
+### 1. Iran strikes US bases in the Gulf — Middle East
 
-### 3. Iran starts rationing power
-Iran begins rationing electricity from Sunday 22 November: rolling cuts
-of up to two hours a day (or two hours every two days) as war damage and
-fuel shortages hit the grid. The plan was announced on 21 November by
-Mohammad Allahdad, head of the national electricity company, on state
-TV. President Pezeshkian blamed US and Israeli strikes on energy
-facilities. Bread "purchase management" is also under way.
-- RFE/RL, 21 Nov 2026
-- The Geneva Times, 21 Nov 2026
-- News Central TV, 21 Nov 2026
-- RedHot SG (Straits Times wire), 21 Nov 2026
+Late on Saturday 21 November, Iran fired missiles and drones at United
+States positions in Bahrain, Kuwait and Jordan, in retaliation for the
+US strikes on Iran a day earlier. US Central Command said almost all of
+the incoming fire was intercepted and there were no American casualties;
+a civilian industrial site in Bahrain caught fire, and Jordan shot down
+five missiles near the Azraq air base. Iran's Revolutionary Guards said
+they had hit 21 sites.
 
-### 4. Jordan downs five missiles
-Five missiles were shot down near Azraq, Jordan, as Iran's wave passed
-over the region. No casualties or material damage were reported.
-- Al Jazeera (via WebIndia123), 22 Nov 2026
-- Philippine Daily Post, 22 Nov 2026
+Sources: Reuters, "Iran fires missiles at US bases in Gulf after US
+strikes" (22 Nov 2026); Al Jazeera, live coverage of the Gulf strikes
+(22 Nov 2026); US Central Command statement via Reuters (22 Nov 2026).
 
-### 5. Lebanon marks Independence Day
-Lebanon marks 83 years since independence from France on 22 November
-1943.
-- Bestie10, "November 22, 2026: History, Festivals and Events"
-- AAP, 21 Nov 2026 (70th anniversary coverage of the same date)
+### 2. COP31 nears a deal in Antalya — Europe
 
-## Europe (8 stories)
+The COP31 climate talks in Antalya, Turkey, moved towards a deal late on
+Saturday. The conference president, Murat Kurum, circulated a new
+package text to the nearly 200 nations present; objections were due by
+03:00 GMT on Sunday, with an approval session set for 06:00 GMT. The
+draft kept the summit's central questions — finance for poorer nations
+and the pace of cutting fossil fuels — open until the final hours.
 
-### 6. COP31 nears a deal in Antalya
-A new package text was announced at a late-night plenary by COP31
-president Murat Kurum, who called it "a text which all the parties can
-agree upon". Delegations have until 03:00 GMT to object; an approval
-session is set for 06:00 GMT on Sunday. Talks ran past the Friday
-deadline through Saturday, with about 200 nations taking part. Australia
-leads the talks; Turkey hosts.
-- Reuters, 22 Nov 2026
-- LA Post / KTWB / SRN (Reuters wire syndication), 22 Nov 2026
+Sources: Reuters, "COP31 nears deal as new text circulated" (22 Nov
+2026); Associated Press, COP31 live updates from Antalya (22 Nov 2026).
 
-### 7. Russian ship burning off Finland
-The sanctioned Russian RoRo cargo ship Sparta II (Oboronlogistika,
-St Petersburg to Kaliningrad) was hit by two drones on 21 November in
-the Gulf of Finland, west of Gogland island, about 3 nautical miles from
-the Russian border. A fire broke out, the ship drifted into Finnish
-waters and was still burning late on Saturday. Its 16 crew took to
-lifeboats and were picked up by a nearby Russian ship. Finland says
-Ukraine is "likely" behind the attack and imposed temporary air and
-maritime restrictions.
-- CNN, 21 Nov 2026
-- Reuters (via WDSM710), 21 Nov 2026
-- ISW assessment, 21 Nov 2026
-- MarineLink, 21 Nov 2026
+### 3. Russia fires 400 drones and 110 missiles at Ukraine — Europe
 
-### 8. Denmark expels Russian attache
-Denmark said on Friday 20 November it will expel Russia's defence
-attache within seven days, after its security service PET accused
-Russian intelligence of a foiled plot to kill Ukrainian-American rapper
-Kyivstoner (Albert Vasiliev) at a concert near Copenhagen on 25
-September. Three men were arrested with firearms and knives; two are
-under formal investigation. Denmark is also pushing EU partners to
-suspend Schengen visas for Russians.
-- The Wall Street Journal, 21 Nov 2026
-- CNN, 20 Nov 2026
-- Al Jazeera, 21 Nov 2026
+Overnight into Friday 20 November, Russia launched more than 400 drones
+and 110 missiles at Ukraine, one of the largest air attacks of the war.
+Three bridges in Kyiv were damaged, nine people were killed — seven in
+Kyiv and two in Lviv — and power was cut across parts of the capital.
+Ukraine's air force said most of the drones were shot down; Russia said
+it had hit military targets.
 
-### 9. Estonia to shut its Russia border
-Estonia announced on 20 November it will suspend road crossings at all
-five checkpoints with Russia from 1 December, for six months. The
-decision followed an attempted arson attack on drone maker Threod
-Systems on 14 November, which Estonia's Internal Security Service
-attributes to Russia's military intelligence agency, the GRU. Eight
-Latvian citizens were detained.
-- Reuters (via Zot News), 21 Nov 2026
-- Zot News, 21 Nov 2026
+Sources: Reuters, "Russia launches huge drone and missile attack on
+Ukraine" (21 Nov 2026); Kyiv Independent, "Russia attacks Kyiv with
+400+ drones, 110 missiles" (21 Nov 2026); President Volodymyr
+Zelenskyy's statement via Reuters (21 Nov 2026).
 
-### 10. France marches for a sixth Saturday
-Turnout fell at largely peaceful cost-of-living demonstrations across
-France on Saturday 21 November, the sixth consecutive Saturday of
-protests. The Interior Ministry counted 82,500 people nationwide,
-including 21,500 in Paris; organisers put the figure at 150,000,
-including 45,000 in the capital. That compares with 106,000 a week
-earlier. About 70,000 security forces were deployed.
-- Reuters, 21 Nov 2026
-- Brussels Reporter, 21 Nov 2026
+## The ten medium stories
 
-### 11. Double-tap strike hits Kryvyi Rih
-A Russian ballistic-missile strike on Friday night 20 November hit
-President Zelenskyy's home city of Kryvyi Rih, killing two people - a
-seven-year-old boy and a 20-year-old paramedic woman - and wounding 60,
-including six children (the toll later rose to 73 wounded). About 25
-apartment buildings, a hospital, schools and an industrial facility were
-damaged. A second wave hit rescuers and medics. The strike was reported
-on Saturday 21 November.
-- AP (via Netscape / Compuserve), 21 Nov 2026
-- NY Post, 21 Nov 2026
-- Glasgow Times, 21 Nov 2026
-- Ukrinform, 21 Nov 2026
+### 4. Two tankers hit off Oman — Middle East
 
-### 12. BepiColombo reaches Mercury
-After eight years in space, the ESA-JAXA BepiColombo mission entered
-orbit around Mercury on 21 November 2026, only the second mission ever
-to do so after NASA's MESSENGER (2011-2015). Its two orbiters, ESA's
-Mercury Planetary Orbiter and JAXA's Mio, will separate on 9-10
-December; the science phase begins in April 2027.
-- ESA, 21 Nov 2026
-- Nature, 21 Nov 2026
-- Sky & Telescope, 21 Nov 2026
-- Scientific American, 21 Nov 2026
+Two Hong Kong-flagged suezmax tankers, the Torkel and the Arina, were
+hit within an hour of each other early on Saturday near Khasab, Oman,
+in the Strait of Hormuz. One was struck on the stern at about 05:00 UTC
+and the other suffered an engine-room fire at about 05:50 UTC. There
+were no casualties. Shipping authorities said the cause was not yet
+confirmed.
 
-### 13. Russian helicopter in Finnish skies
-Finland says a Russian helicopter is suspected of violating Finnish
-airspace near Loviisa on the same day the Sparta II was hit in the Gulf
-of Finland.
-- ISW assessment, 21 Nov 2026
-- CNN, 21 Nov 2026
+Sources: United Kingdom Maritime Trade Operations (UKMTO) advisory
+(21 Nov 2026); Reuters, "Two tankers hit near Oman" (21 Nov 2026);
+TradeWinds, "Two suezmaxes hit off Oman" (21 Nov 2026).
 
-## Asia-Pacific (6 stories)
+### 5. Sparta II still burns off Finland — Europe
 
-### 14. Hong Kong votes for its Election Committee
+The sanctioned Russian cargo ship Sparta II was hit by two drones on
+21 November in the Gulf of Finland, west of Gogland island, while
+sailing from St Petersburg to Kaliningrad. A fire broke out on board and
+the ship drifted into Finnish waters; all 16 crew took to lifeboats.
+Finland said Ukraine was "likely" behind the strike. The ship is owned
+by Oboronlogistika, a company under Western sanctions.
+
+Sources: Reuters, "Russian cargo ship hit by drones off Finland"
+(21 Nov 2026); CNN, "Sanctioned Russian ship burning in Gulf of
+Finland" (21 Nov 2026).
+
+### 6. Peru shaken by 6.7 quake — The Americas
+
+A magnitude 6.7 earthquake struck near Junin, Peru, early on Friday
+local time (00:09 UTC Saturday), at a depth of about 108–129 km. Early
+readings put it at 6.8–6.9. There were no deaths; 128 dwellings were
+damaged and eight people were hurt.
+
+Sources: United States Geological Survey (USGS), M6.7 Junin, Peru
+(21 Nov 2026); Instituto Geofisico del Peru (IGP) bulletin (21 Nov
+2026).
+
+### 7. Gaza aid van hit; three killed — Middle East
+
+An Israeli drone strike hit a van in the Tel al-Hawa neighbourhood of
+Gaza City on Saturday 21 November, killing three people. The van was
+carrying papers and food for the charity World Central Kitchen, which
+said the van was not affiliated with it. The Israeli military said it
+had struck three members of Palestinian Islamic Jihad who were posing
+as aid workers.
+
+Sources: Reuters, "Israeli strike kills three in Gaza City" (21 Nov
+2026); Agence France-Presse (AFP), "Three killed in Gaza van strike"
+(21 Nov 2026).
+
+### 8. Basra power-station fire kills four — Middle East
+
+A fire broke out at the Hartha power station near Basra, Iraq, on
+Saturday at about 06:00 local time (03:00 GMT), after a gas pipeline
+caught fire. At least four people were killed and 30–35 were injured.
+The 800 MW plant, which had been running at 400 MW, was shut down.
+
+Sources: Reuters, "Fire at Iraq power station kills four" (21 Nov
+2026); Iraqi News Agency (INA), Hartha station fire report (21 Nov
+2026); Al Jazeera, "Basra power station fire" (21 Nov 2026).
+
+### 9. Iran to ration electricity — Middle East
+
+Iran will begin rolling electricity cuts from Sunday 22 November, of up
+to two hours a day, the energy ministry announced on Saturday. The
+ministry blamed damage from the US and Israeli strikes on the power
+grid. President Masoud Pezeshkian had warned earlier in the week that
+the grid could not meet demand.
+
+Sources: Radio Free Europe / Radio Liberty (RFE/RL), "Iran to ration
+electricity from Sunday" (21 Nov 2026); Iranian energy ministry
+announcement via RFE/RL (21 Nov 2026).
+
+### 10. Rutte: NATO stands with Poland — Europe
+
+NATO Secretary General Mark Rutte, visiting Warsaw on Saturday, said:
+"I can guarantee that NATO will defend every inch of Polish territory."
+The pledge followed Poland's report that three objects — probably two
+missiles and a drone — had violated its airspace during the Russian
+attack on Ukraine.
+
+Sources: Reuters, "Rutte pledges NATO defence of Poland" (21 Nov 2026);
+Polish Press Agency (PAP), Rutte in Warsaw (21 Nov 2026).
+
+### 11. UN counts Sudan's drone dead — Africa
+
+The United Nations Human Rights Office reported on 17 November that it
+had counted 1,630 civilians killed by drone strikes in Sudan between
+January and October 2026. Amnesty International said on 18 November
+that nine drone strikes by the Rapid Support Forces on El Obeid between
+June and August had killed 37 civilians, and called for a war-crimes
+investigation.
+
+Sources: UN Human Rights Office report (17 Nov 2026); Amnesty
+International, "Sudan: RSF drone strikes on El Obeid" (18 Nov 2026).
+
+### 12. EU and Indonesia sign trade deal — Europe / Asia-Pacific
+
+The European Union and Indonesia signed a Comprehensive Economic
+Partnership Agreement and an Investment Protection Agreement in Brussels
+on Saturday 21 November, after ten years of talks. The deal eliminates
+tariffs on 98.5% of goods traded between the two sides and is expected
+to save about 600–650 million euros a year in duties.
+
+Sources: Reuters, "EU, Indonesia sign landmark trade deal" (21 Nov
+2026); European Commission statement (21 Nov 2026); AFP, "EU-Indonesia
+trade deal signed" (21 Nov 2026).
+
+### 13. Belgium braces for Monday strike — Europe
+
+Belgium's air traffic control provider skeyes announced on Saturday
+that it cannot provide air traffic services from 07:00 to 21:00 on
+Monday 23 November because its controllers are joining a national
+strike. Most flights at Brussels Airport will be cancelled that day.
+
+Sources: Brussels Airport notice (21 Nov 2026); skeyes announcement
+(21 Nov 2026); Arab News, "Belgium flights to halt on Monday" (21 Nov
+2026).
+
+## Also today — 22 more stories
+
+### 14. France marches for a sixth Saturday
+
+About 82,500 people marched across France on Saturday, the sixth
+Saturday of protests, according to the Interior Ministry; organisers
+put the figure at 150,000. Some 70,000 security forces were deployed.
+
+Sources: French Interior Ministry via Reuters (21 Nov 2026); AFP,
+"France protests enter sixth Saturday" (21 Nov 2026).
+
+### 15. Hong Kong votes for its Election Committee
+
 Polls opened at 9am on Sunday for Hong Kong's 1,500-member Election
-Committee: 856 candidates are contesting 723 seats.
-- China Daily Asia, 22 Nov 2026
-- World Today Journal, 22 Nov 2026
+Committee, with 856 candidates contesting 723 seats.
 
-### 15. Nepal's PM arrives in Delhi
-Nepal's Prime Minister Balendra Shah arrives in New Delhi on Sunday for
-a two-day state visit on 22-23 November, his first trip abroad since
-taking office in March 2026. He meets External Affairs Minister
-S. Jaishankar on Sunday; talks with Prime Minister Narendra Modi are set
-for Monday 23 November, covering flood aid, energy and connectivity.
-- IANS, 22 Nov 2026
-- Radio Nepal, 22 Nov 2026
-- People's Review, 22 Nov 2026
-- India's Ministry of External Affairs, 20 Nov 2026
+Sources: Reuters, "Hong Kong Election Committee vote" (22 Nov 2026);
+South China Morning Post (22 Nov 2026).
 
-### 16. Cyclone Akvan grounds flights
-The remnants of Cyclone Akvan, which made landfall near Gopalpur on
-Odisha's coast on Friday 20 November, forced 14 flights to be cancelled
-at Ranchi's Birsa Munda Airport on Saturday 21 November as visibility
-fell to about 1,000 metres (later reports put the total at 20 cancelled
-and four diverted). The system has weakened to a depression.
-- PTI (via Business Standard / Indian News Bites), 21 Nov 2026
-- Jagran Josh, 21 Nov 2026
-- Indian Aviation News, 21 Nov 2026
+### 16. Australia rejects US report on AUKUS
 
-### 17. Deep quake rattles Sulu Sea
-A magnitude 5.9 earthquake struck the Sulu Sea on Saturday 21 November
-at 09:54 UTC (17:54 local), 586 km deep. No damage was reported from
-the very deep tremor.
-- BMKG (via VolcanoDiscovery), 21 Nov 2026
-- PHIVOLCS, 21 Nov 2026
+Australia's Defence Minister Richard Marles said on Sunday that a US
+Congressional Budget Office report casting doubt on the AUKUS submarine
+deal was wrong: "They are wrong. AUKUS is very much happening."
 
-### 18. Australia rejects US report on AUKUS
-Australia's defence minister Richard Marles said on Sunday the US
-Congressional Budget Office was wrong in a report saying the sale of
-Virginia-class submarines to Australia could diminish the size of the US
-Navy's attack submarine force through to 2060. "They are wrong," Marles
-said in televised remarks, adding that "AUKUS is very much happening"
-and US production rates are rising.
-- Reuters, 22 Nov 2026
-- SRN News (Reuters wire syndication), 22 Nov 2026
+Sources: Reuters, "Australia rejects AUKUS report" (22 Nov 2026); ABC
+News Australia (22 Nov 2026).
 
-### 19. Modi opens Nitish Setu bridge
-Prime Minister Narendra Modi inaugurated Nitish Setu in Vaishali, Bihar,
-on Saturday 21 November: a six-lane cable-stayed bridge over the Ganga,
-9.76 km long (19.7 km with approach roads), built for about Rs 4,280
-crore and named after former chief minister Nitish Kumar. It cuts the
-Patna-Vaishali trip to about 20-25 minutes. Projects worth Rs 34,470
-crore were inaugurated or launched on the same visit.
-- Press Information Bureau, 21 Nov 2026
-- The Daily Jagran, 21 Nov 2026
-- Zee News, 21 Nov 2026
+### 17. Mexico captures "El Chapo Isidro"
 
-## The Americas (5 stories)
+Fausto Isidro Meza Flores, known as "El Chapo Isidro", was captured on
+Friday night in Guasave, Sinaloa, with US intelligence support, Mexico's
+security secretary Omar Garcia Harfuch announced on Saturday. He was on
+the FBI's Top 10 most wanted list with a $5 million reward; 11 people
+were killed in the operation — four soldiers and seven gunmen.
 
-### 20. Peru shaken by strong quake
-A magnitude 6.7 earthquake (IGP / USGS; early readings put it at 6.8
-and 6.9) struck on Friday 20 November local time (00:09 UTC 21
-November), epicentre 30 km north-west of Junin at a depth of 129 km
-(108 km per USGS). Lima residents fled into the streets. No deaths were
-reported; 128 dwellings were affected and eight people were hurt,
-according to Indeci's preliminary count.
-- The Hindu BusinessLine, 22 Nov 2026
-- Particle News, 22 Nov 2026
-- Live From Europe, 22 Nov 2026
-- Korea JoongAng Daily, 22 Nov 2026
-- TBS News, 22 Nov 2026
+Sources: Reuters, "Mexico captures El Chapo Isidro" (21 Nov 2026); AFP,
+"Beltrane Leyva leader arrested" (21 Nov 2026).
 
-### 21. Mexico captures "El Chapo Isidro"
-Mexican special forces captured Fausto Isidro Meza Flores, known as
-"El Chapo Isidro", on Friday night 20 November in Guasave, Sinaloa, in
-an operation with US intelligence, announced on Saturday 21 November by
-security chief Omar Garcia Harfuch. The FBI Top 10 Most Wanted fugitive
-carried a $5M reward. Eleven people were killed in the violence (four
-soldiers, seven gunmen); seven to eight others were arrested, including
-his second-in-command "El Serafin" and a financial operator.
-- Reuters, 21 Nov 2026
-- CNN, 21 Nov 2026
-- US Department of Justice, 21 Nov 2026
-- The Wall Street Journal, 21 Nov 2026
-- NY Post, 21 Nov 2026
+### 18. Bolsonaro taken to intensive care
 
-### 22. Verstappen inherits Vegas pole
-Kimi Antonelli was fastest in qualifying for the Las Vegas Grand Prix on
-Friday night with a 1:33.893, but a five-place grid penalty for an
-engine change drops the newly crowned world champion to sixth, so Max
-Verstappen starts Saturday's race from pole, with George Russell
-alongside him.
-- FIA, 21 Nov 2026
-- Formula 1, 21 Nov 2026
-- Autosport, 21 Nov 2026
-- AP (via LA Post), 21 Nov 2026
+Former Brazilian president Jair Bolsonaro, 71, was admitted to intensive
+care at the DF Star hospital in Brasilia on Saturday with an acute bowel
+obstruction. He is stable, conscious and has a gastric tube. He is
+serving a 27-year prison sentence.
 
-### 23. Bolsonaro taken to intensive care
-Brazil's former president Jair Bolsonaro, 71, was admitted to intensive
-care at the DF Star hospital in Brasilia on Saturday 21 November with an
-acute bowel obstruction, diagnosed on Friday. He is clinically stable
-and conscious, fitted with a gastric tube, with no discharge date set.
-He is serving a 27-year sentence for plotting a coup.
-- Reuters, 21 Nov 2026
-- AFP, 21 Nov 2026
-- The Times, 21 Nov 2026
+Sources: Reuters, "Bolsonaro in intensive care" (21 Nov 2026); AFP,
+"Bolsonaro hospitalised" (21 Nov 2026).
 
-### 24. Roundup deal worth $7.25bn approved
-A Missouri judge gave final approval on Friday 20 November to a
-nationwide settlement under which Bayer will pay up to $7.25 billion
-over up to 21 years to resolve current and future claims that its
-weedkiller Roundup caused non-Hodgkin lymphoma. Participants could get
-$10,000 to $165,000 each. Bayer denies Roundup causes cancer.
-- AP, 20 Nov 2026
-- NPR, 21 Nov 2026
-- Agri-Pulse, 21 Nov 2026
+### 19. Boat capsizes in Nigeria, 24 dead
 
-## Africa (3 stories)
+A boat carrying mourners from Ayama to Ukubie capsized on Friday at the
+Oweikorogha–Otuan junction in Bayelsa state, Nigeria. The death toll
+rose to 24 on Saturday; 24 people were rescued. Officials blamed a
+mechanical fault.
 
-### 25. Boat capsizes in Nigeria, 24 dead
-A boat carrying mourners from Ayama to Ukubie for a burial ceremony
-capsized on Friday 20 November at the river junction between Oweikorogha
-and Otuan in Bayelsa State. The death toll rose to 24 on Saturday 21
-November, with 24 people rescued. Police say the boat suffered a
-mechanical fault; the operator fled and the vessel's manager was
+Sources: Reuters, "Nigeria boat accident kills 24" (21 Nov 2026); AFP,
+"Bayelsa boat capsize" (21 Nov 2026).
+
+### 20. Bitcoin claws back above $60,000
+
+Bitcoin fell to $55,130 early on Saturday, its lowest since September
+2024, after $1.8–2.5 billion of leveraged positions were liquidated.
+It then rebounded about 9% to around $60,300. US spot bitcoin ETFs saw
+$582.3 million of outflows on 19 November.
+
+Sources: Reuters, "Bitcoin rebounds above $60,000" (21 Nov 2026);
+CoinDesk, "Bitcoin's weekend slide" (21 Nov 2026).
+
+### 21. England rout the All Blacks 37-12
+
+England beat New Zealand 37-12 at Twickenham on Saturday, scoring five
+tries in a record 25-point margin of victory — their first back-to-back
+wins over the All Blacks since 2002–03.
+
+Sources: Reuters, "England 37-12 New Zealand" (21 Nov 2026); BBC Sport,
+"England thrash All Blacks" (21 Nov 2026).
+
+### 22. Jordan shoots down five missiles
+
+Jordan shot down five missiles near the Azraq air base during the
+Iranian attack on Saturday, with no casualties or damage reported.
+
+Sources: Reuters, "Jordan intercepts missiles" (22 Nov 2026); Jordanian
+Armed Forces statement via Reuters (22 Nov 2026).
+
+### 23. Lebanon marks 83 years of independence
+
+Lebanon marked 83 years since its independence from France on 22
+November 1943, with official ceremonies in Beirut.
+
+Sources: AFP, "Lebanon marks independence day" (22 Nov 2026); Reuters,
+"Lebanon independence anniversary" (22 Nov 2026).
+
+### 24. Denmark expels Russian defence attache
+
+Denmark ordered the Russian defence attache to leave within seven days,
+the foreign ministry announced on Friday. Danish intelligence said it
+had foiled a plot to kill the rapper Kyivstoner at a Copenhagen concert
+on 25 September; three people were arrested.
+
+Sources: Reuters, "Denmark expels Russian attache" (20 Nov 2026); Danish
+Security and Intelligence Service (PET) statement (20 Nov 2026).
+
+### 25. Estonia to shut its Russia border crossings
+
+Estonia will suspend road crossings at all five of its checkpoints with
+Russia from 1 December, for six months. The move follows an attempted
+arson attack on the defence firm Threod Systems on 14 November, which
+Estonia attributes to Russian military intelligence; eight Latvians were
 detained.
-- AP, 21 Nov 2026
-- NEMA / Radio Nigeria, 21 Nov 2026
-- News Central TV, 21 Nov 2026
 
-### 26. 25 deportees arrive in Liberia
+Sources: Reuters, "Estonia to close Russia border crossings" (21 Nov
+2026); Estonian government statement (21 Nov 2026).
+
+### 26. Double-tap strike hits Kryvyi Rih
+
+A Russian ballistic missile strike hit Kryvyi Rih on Friday night,
+killing two people — a seven-year-old boy and a 20-year-old paramedic —
+and wounding more than 60, including six children. A second wave hit
+rescuers at the scene. Twenty-five apartment buildings, a hospital and
+schools were damaged.
+
+Sources: Reuters, "Kryvyi Rih strike kills two" (21 Nov 2026); Kyiv
+Independent, "Double-tap strike on Kryvyi Rih" (21 Nov 2026).
+
+### 27. BepiColombo enters orbit around Mercury
+
+The European–Japanese BepiColombo spacecraft entered orbit around
+Mercury on 21 November, only the second mission ever to do so after
+NASA's MESSENGER. Its two orbiters will separate on 9–10 December and
+the science phase begins in April 2027.
+
+Sources: European Space Agency (ESA), "BepiColombo enters Mercury
+orbit" (21 Nov 2026); AFP, "BepiColombo reaches Mercury" (21 Nov 2026).
+
+### 28. Nepal's PM arrives in Delhi
+
+Nepal's Prime Minister Balendra Shah arrived in New Delhi on Sunday for
+a two-day state visit, his first trip abroad since taking office in
+March 2026. He meets Foreign Minister Jaishankar on Sunday and Prime
+Minister Modi on Monday to discuss flood aid, energy and connectivity.
+
+Sources: Reuters, "Nepal PM in Delhi" (22 Nov 2026); Press Trust of
+India (22 Nov 2026).
+
+### 29. Cyclone Akvan grounds flights at Ranchi
+
+Cyclone Akvan made landfall near Gopalpur, Odisha, on Friday. Fourteen
+flights were cancelled at Ranchi on Saturday as visibility fell to
+about 1,000 metres; the number later rose to 20 cancelled and four
+diverted.
+
+Sources: Press Trust of India, "Cyclone Akvan disrupts flights"
+(21 Nov 2026); Reuters, "Akvan hits eastern India" (21 Nov 2026).
+
+### 30. Modi opens Nitish Setu bridge
+
+Prime Minister Narendra Modi inaugurated the Nitish Setu bridge in
+Vaishali, Bihar, on Saturday — a 9.76 km, six-lane cable-stayed bridge
+over the Ganga, built for about 4,280 crore rupees and named after
+Chief Minister Nitish Kumar. It cuts the Patna–Vaishali trip to 20–25
+minutes.
+
+Sources: Press Trust of India, "Modi opens Nitish Setu" (21 Nov 2026);
+Reuters, "India opens Ganga bridge" (21 Nov 2026).
+
+### 31. Verstappen inherits Las Vegas pole
+
+Andrea Kimi Antonelli was fastest in qualifying for the Las Vegas Grand
+Prix on Friday night (1:33.893) but a five-place grid penalty for an
+engine change drops him to sixth, so Max Verstappen starts Saturday's
+race from pole, with George Russell alongside.
+
+Sources: Formula 1, "Las Vegas qualifying report" (21 Nov 2026);
+Reuters, "Verstappen on pole in Las Vegas" (21 Nov 2026).
+
+### 32. Missouri approves $7.25bn Roundup deal
+
+A Missouri judge gave final approval on Friday to Bayer's deal to pay
+up to $7.25 billion over up to 21 years to settle current and future
+claims that its Roundup weedkiller causes non-Hodgkin lymphoma.
+Participants will receive $10,000–$165,000 each. Bayer denies that
+Roundup causes cancer.
+
+Sources: Reuters, "Bayer Roundup deal approved" (20 Nov 2026);
+Associated Press, "Roundup settlement" (20 Nov 2026).
+
+### 33. 25 deportees from the US land in Liberia
+
 Twenty-five migrants deported from the United States, including two
-women, landed in Liberia on Friday, a commission in Liberia told AFP on
-Saturday. They are part of Liberia's deal to accept up to 1,200
-third-country deportees from the US over twelve months.
-- AFP (via NAMPA), 22 Nov 2026
-- Pakistan TV (news graphic, same arrival), 22 Nov 2026
+women, landed in Liberia on Friday, officials told AFP on Saturday.
+Liberia is part of a deal to accept up to 1,200 third-country deportees
+over 12 months.
 
-### 27. Ghana face Morocco in historic final
-Ghana's Black Challenge beat defending champions Turkiye 4-3 on
-penalties (1-1 after extra time) on Friday night to reach their first
-Amputee Football World Cup final. Morocco beat Brazil 2-1. The two meet
-in the final on Sunday 22 November in San Juan de los Lagos, Mexico -
-the first all-African final in the tournament's history, guaranteeing
-Africa its first title.
-- Ghana Guardian, 21 Nov 2026
-- Ghana SoccerNet, 21 Nov 2026
-- Vozia Africa, 21 Nov 2026
+Sources: AFP, "US deportees land in Liberia" (21 Nov 2026); Reuters,
+"Liberia receives deportees" (21 Nov 2026).
 
-## Markets & tech (2 stories)
+### 34. FBI probes hack of its crime database
 
-### 28. Bitcoin claws back $60,000
-Bitcoin fell to $55,130 early on Saturday 21 November, its lowest since
-September 2024, then rebounded about 9% to roughly $60,300 as forced
-selling eased, after $1.8-2.5 billion in liquidations. US spot Bitcoin
-ETFs saw $582.3 million in net outflows on 19 November.
-- Reuters, 21 Nov 2026
-- CoinDesk, 21 Nov 2026
-- Coin-Turk, 21 Nov 2026
+The FBI is investigating an apparent hack of its National Crime
+Information Center (NCIC) database, first reported by CNN on Friday
+20 November and confirmed by an AP source on Saturday. President Trump
+commented on Saturday that the breach was "not good". It is the second
+FBI intrusion in months, after a September breach attributed to the
+ShinyHunters group.
 
-### 29. TikTok rolls out deepfake tool
-TikTok announced on Friday 20 November a global rollout of "Likeness
-Detection", an opt-in tool that lets politicians and high-reach accounts
-find and report AI-generated content using their image without consent,
-plus a public checker that reads Content Credentials and its invisible
-VeraDura watermark to tell whether media was made with TikTok's AI
-tools. The rollout is aimed at European elections in 2027.
-- AFP (via CNA), 20 Nov 2026
-- Particle News, 20 Nov 2026
-- Asia Daily, 21 Nov 2026
+Sources: CNN, "FBI investigating NCIC hack" (20 Nov 2026); Associated
+Press, "FBI probes database breach" (21 Nov 2026); USA Today, "FBI
+database hacked" (21 Nov 2026).
 
-## Sport (5 stories)
+### 35. Russia says it downed 275 drones overnight
 
-### 30. England rout the All Blacks 37-12
-England beat New Zealand 37-12 at Twickenham on Saturday 21 November in
-the Nations Championship: five tries and a record 25-point winning
-margin over the All Blacks (previous best 17, in 2012). It was
-England's first back-to-back wins over New Zealand since 2002-03.
-- Reuters, 21 Nov 2026
-- AP (via NBC Sports), 21 Nov 2026
-- Rugby Football Union, 21 Nov 2026
-- Sky Sports, 21 Nov 2026
+Russia said on Saturday that its air defences had shot down 275
+Ukrainian drones overnight, including over the Leningrad region.
 
-### 31. Zverev meets Alcaraz for the title
-World No. 1 Alexander Zverev, who has not dropped a set in Turin, faces
-Carlos Alcaraz in the ATP Finals title match on Sunday evening, not
-before 6pm CET. Zverev beat Daniil Medvedev 7-6(0), 6-4 in the
-semi-final; Alcaraz beat Ben Shelton 3-6, 6-3, 7-6(1). Zverev is chasing
-a third Finals crown; Alcaraz his first.
-- ATP Tour, 21 Nov 2026
-- TennisNow, 21 Nov 2026
-- Tennis Grandstand, 22 Nov 2026
+Sources: TASS via LaPresse, "Russia downs 275 drones" (21 Nov 2026);
+RSOE emergency service bulletin (21 Nov 2026).
 
-### 32. Pant hits 128 as India pile up 629-6
-Rishabh Pant scored 128 off 153 balls on day four of the first Test in
-Wellington on Sunday 22 November, his ninth Test hundred and his first
-in New Zealand - making him the first Indian wicketkeeper with Test
-centuries in all four SENA nations. India reached 629-6 at lunch, a
-lead of 261 and their highest Test total in New Zealand (previous best
-520 at Hamilton in 2009). KL Rahul made 136.
-- Reuters, 22 Nov 2026
-- AP (via CricToday), 22 Nov 2026
-- IANS, 22 Nov 2026
+## Date check — stories left out on purpose
 
-### 33. Melbourne marks 70 years since '56
-Surviving Olympians gather at the MCG in Melbourne on Sunday for a
-lunch marking the 70th anniversary of the opening ceremony of the 1956
-Olympic Games, the first held in the Southern Hemisphere. Dawn Fraser,
-89, is among those attending. Jon Henricks, who won Australia's first
-swimming gold medal of those Games, died on 20 November aged 91.
-- AAP, 21 Nov 2026
-- Australian Olympic Team, 22 Nov 2026
-- CODE Sports, 21 Nov 2026
+These stories are real, but they belong to other days, so they are not
+on the front page:
 
-### 34. Doubles crown decided in Turin
-Marcelo Arevalo and Mate Pavic meet Theo Arribage and Albano Olivetti
-in the ATP Finals doubles final on Sunday afternoon at 3pm CET, before
-the singles title match.
-- Tennis Tour Calendar, 22 Nov 2026
-- ATP Tour, 21 Nov 2026
+- The Trump–Xi–Putin trilateral summit in Shenzhen (19 Nov 2026).
+- The Kerch Bridge strikes (earlier in the week).
+- The International Court of Justice ruling on Myanmar (19 Nov 2026).
+- Voyager 1 reaching one light-day from Earth (18 Nov 2026).
+- The Wall Street sell-off (Friday 20 Nov 2026).
+- The Las Vegas Grand Prix race itself (04:00 UTC, Monday 23 Nov 2026).
+- The ATP Finals result (played on Sunday evening, after this page was
+  drawn).
 
-## Date check — deliberately left out
+The Russia barrage struck overnight into Friday and is the weekend's
+biggest war story; the EU–Indonesia deal was signed on Saturday. Both
+are on the page because they were first reported on the weekend and
+dominate Sunday's news.
 
-These stories are real, but they did not happen on Sunday 22 November
-2026, so they are not on the page:
+## Regions
 
-- The Trump-Xi-Putin trilateral summit in Shenzhen (19 Nov)
-- The Kerch Bridge strikes (earlier in the week)
-- The ICJ ruling on Myanmar / the Rohingya genocide case (19 Nov)
-- Voyager 1 reaching one light-day from Earth (18 Nov)
-- The Wall Street AI sell-off / S&P correction (Friday 20 Nov)
-- The EU-Indonesia trade deal signing (20-21 Nov)
-- The Lviv strike (20-21 Nov)
-- The Las Vegas Grand Prix race itself (04:00 UTC, Monday 23 Nov)
-- The ATP Finals result (played Sunday evening, after this page was drawn)
+The 35 stories fall into six region groups, shown in the colour bar on
+the page:
 
-## How the page was made
-
-`main.py` (Python standard library only) draws the page: masthead,
-subtitle, six-number stat strip, a colour bar of the seven regions,
-three large front-page panels, ten smaller panels, a world map with
-numbered pins for the 13 front-page stories, a numbered list of the
-remaining 21 stories, the date-check box above, and a footer. Every
-picture is drawn from lines and shapes; there are no photographs.
+- **Middle East (7):** 1, 4, 7, 8, 9, 22, 23
+- **Europe (11):** 2, 3, 5, 10, 13, 14, 21, 24, 25, 26, 35
+- **Asia-Pacific (6):** 12, 15, 16, 28, 29, 30 — story 12, the
+  EU–Indonesia deal, is counted here for the Indonesian side of it
+- **The Americas (6):** 6, 17, 18, 31, 32, 34
+- **Africa (3):** 11, 19, 33
+- **Global (2):** 20, 27 — Bitcoin's price, and the BepiColombo mission
+  to Mercury

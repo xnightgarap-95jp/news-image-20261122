@@ -2,11 +2,13 @@
 """Draw "The World in One Day" -- Sunday 22 November 2026.
 
 A newspaper front page that sums up one day of world news in a single
-1024x1024 picture.  Every story is drawn from lines, shapes and a small
-bitmap font that is embedded below as data; there are no photographs,
-no external files and no third-party libraries.
+1024x1024 picture.  Every picture on the page is drawn from lines and
+shapes; there are no photographs, no external files and no third-party
+libraries.  The type is DejaVu Serif, rasterised into the blob below by
+/tmp/gen_font.py (PIL, run once on this machine) and decoded here with
+the standard library only.
 
-Standard library only: base64, math, os, struct, zlib.
+Standard library only: base64, json, math, os, struct, zlib.
 
 Run from this folder:
 
@@ -17,13 +19,15 @@ written next to this script.  Running it again produces a byte-identical
 file: no randomness, no timestamps, no dictionary-order dependence.
 
 Layout (top to bottom): masthead and date, a subtitle of the three lead
-stories, a strip of six numbers, a colour bar of the seven regions,
-three large front-page panels, ten smaller panels, a world map with
-numbered pins, a numbered list of the remaining stories, a date-check
-box of stories that were deliberately left out, and a footer.
+stories, a strip of six numbers, a colour bar of the six regions, three
+large front-page panels with drawn scenes, ten smaller panels with drawn
+scenes, a world map with numbered pins, a numbered list of the remaining
+stories, a date-check box of stories that were deliberately left out,
+and a footer.
 """
 
 import base64
+import json
 import math
 import os
 import struct
@@ -33,1055 +37,972 @@ W = 1024
 H = 1024
 
 # ---------------------------------------------------------------- colours
-PAPER = (253, 253, 248)   # newsprint white
+PAPER = (253, 251, 242)   # newsprint cream
 INK = (17, 17, 17)        # near-black ink
-GREY = (110, 110, 105)    # secondary text
-LIGHT = (238, 236, 228)   # panel borders and rules
-RED = (179, 38, 30)       # kickers, pins, accents
-SEA = (214, 231, 240)     # map sea
-LAND = (222, 209, 168)    # map land
+GREY = (96, 96, 90)       # secondary text
+LIGHT = (226, 222, 208)   # panel borders and rules
+RED = (178, 34, 28)       # kickers, pins, accents
+DARKRED = (122, 20, 16)
+SEA = (203, 226, 238)     # map sea
+LAND = (224, 210, 166)    # map land
 LAND_LINE = (150, 135, 95)
+NAVY = (18, 32, 64)       # night sky
+SKY = (168, 205, 228)     # day sky
+GOLD = (201, 162, 39)
 
 REGION_COLOURS = {
-    "MIDDLE EAST": (179, 57, 46),
+    "MIDDLE EAST": (178, 57, 46),
     "EUROPE": (31, 78, 121),
     "ASIA-PACIFIC": (46, 125, 50),
     "THE AMERICAS": (211, 108, 24),
     "AFRICA": (106, 76, 147),
-    "MARKETS & TECH": (0, 121, 134),
-    "SPORT": (93, 64, 55),
+    "GLOBAL": (90, 90, 90),
 }
 
-# ------------------------------------------------------- embedded bitmap font
-# Glyphs rasterised from DejaVu Sans (regular and bold) at the sizes the
-# layout needs, packed as 1-bit bitmaps, zlib-compressed and base64-encoded.
-# The decoder below is the only thing that touches this blob.
-CHARSET = "".join(chr(c) for c in range(32, 127)) + "\u2022"
-# (weight, pixel size, cell height) in the same order as the packed data.
-FONT_COMBOS = [
-    ("R", 8, 10), ("R", 9, 12), ("R", 10, 13), ("R", 11, 14), ("R", 12, 15),
-    ("B", 9, 12), ("B", 10, 13), ("B", 11, 14), ("B", 13, 17), ("B", 14, 17),
-    ("B", 20, 24), ("B", 24, 29), ("B", 36, 43),
-]
-FONT_B64 = (
-"eNrNfV+M3MaZZ7U40+yZaTV7ZNluK53m+CL4dIBxaEWBQ53oZlseTCbeiTzny+a0XlyOluZG2s1EpiKvRK+ZbmplRH4IbONwDz7A"
-"F9/TIY9+u304INSOYeVh1g4OefDdBjYNAdHTxTR8QDpIb/d9X/0hi2z2TM94pNv6w2GTxaqvqr76fX+K3aMoU+p0qXhAgb8KhOk4"
-"KIqqqlOl6eliEfOBA9NTKpzST9MlWkBRp6ampyHBY3D/QIk+NwWfVLyswB8ihTYE0sYz2+aXSiXvmFddpedO26k6eLL2c/uh2cfw"
-"rNm2v7v8EntWrqXNTwg/fdO23+S3q1WvWk2a5H9DmQw8LGCNvo/NrpZKq7RdewECPXOq1YW2OGsyqprN1WqvKgjl19pt52z8xMIC"
-"PVtdFdd+5dZYOdpoO3NWdpwyJ8mDSINdq7GhsYEAVs48Xf9vjUUDaW6uLruv0ZqXl51lF8+MZd9fxpvEXV5cZNdcoKrtMkrhjNZi"
-"tN9+lVZClpeX3eXleCTbyVkbhmN51bZXk7uU+sWNjZe+u0ifvXjx7Fl611h59dUVWh90ltfCrpXYtVXWhtO2q6UIz3o4ugucAqAf"
-"z15bXl5t0mv/+cjzp9eP0rurMNIlendVPNGDzrd7yYTiESYPml0Q87aA49ZcJukQJSxAqXF+5bCuOZwCuBYE4uzNN8VZj16z2+2w"
-"LTgP78Js4rOrfNRIPH7sDClq4wAmQ8qevfr8c8/xWlbj+n71K9Ea0MKuJhTYSbvtKuNepEWsG7LKy725urrAzv7TSxsX+b0Fe1Xc"
-"hbFp84Ggs9CEgVpYaCYEtun4Ndn4QXipxltga1SZmioVZ9QDsNBLiA/FOChKqVSanoEztTitAngAKqjqtEov4OUphaMHlMXi0wpe"
-"LU5NTxURH6bhamk6PV3tBCISjIBw+HDnmHeMd9S1baPkCCrJYfIWeZE8CPGfx+URN1ZWXiJp5AAeomGBXUam4Tffte13k9aq1Y4E"
-"IXINYZpaVinWSpEE+Q9Dk81bE4PLzkslWM/8fLnULHH6qwmo0FUrrhuUQVk9bqmK2BJzimBcOHFLNUeipS2f8w9FwzaKguAORFGm"
-"VqyxIhS5yELcqwY5T/4djOqD5PvkHKmzfjWN5WXvVUYP4scK64ux2A7aDFaIu7IIwRV9wRT3SzAzlN9aXDTpORT2IBOSWSztBIwY"
-"Gp1dka6zOpfW1595/vnTrJ61te/CZPP6F/9uUdADdCbtLuH1Mr8OQ7fIx7ANc8Hq7C/EAIW0LS4yeCOvLi4vG80mH53X/G+TP6Xx"
-"MfLP4jFbvghTzet8bdmJ6+mXUJD04xXd5ivY95ENWRmGXmz51dbISEDYay/IV5ySy4Ce4ZgAMkAKnwE2LEx3+TVWhvayx8aN45ng"
-"E1oGOY7Xs0wSLGvL5zgXcDybEg3ttoys18i3eZTojOvE89cSOpdjwOM0lDj9SZ1O4FQjEuNeDHxYpejXa8urjhiY//j8xoYYPJiA"
-"1eWkTJNDIIlgLlidNYqCCzW5M202F7UECsmPygmiOIwDFMDB4mxJoXg4NYqHs6A0lYrFEoAloCCclgAQVXVWLaoCDxEDsXhRmRV4"
-"WCwhTAIeFrOzb9uIg5yg1dXV5M6hw11AxWNiLttOrezGN8+R58h3yQ/IrH/I/1ryjHFx4bkzi/8qBtssMsrQKLDx547z87gcdLFT"
-"4tM1go4ZeBR4tCAjpAFayiJTWCj0QPAEN5ZqTZt3wVguGSXRn9qx0nJfNOq23VK5JIrZbXeFr1PiAchWm0JIrCwbKxyloOoVrxyL"
-"jBRWpsDyQM2uHSA5aEnserEuuMKpZQHzUb/tfx9G+t9DbY/CZ4btxrFlb/EnnAJARgGOxEQosE1O9dLp06eX+Bh47TYmIoEoJ808"
-"1z5z+hx/ZmlpqQOZjGBnCjzJ4rIDC3ZRvuPFVJ+H+B8Axv4MluxTyZytr3/ve2fO8KrNdaBt3RQjuiKRw+5MxXeWOZIj1caUGPg+"
-"lYHNmOolAc7kJ4uLF48ZiZTd8lcgrvpXyAmIcViEMsYKr/rVZam2/lQpC60cJDi4Lkjgyld07RvnJsFXCWFx2ECwrcQry4hlULlc"
-"9lZWVuIRNVa8tsG1j3YkwyMWcynL4sPLsdAjKaRNoBbPQPJxDMsBW0JeISv+Mo3SxaRq9iEGSkK7IKqgVJfLZARz0bApCdClXYiX"
-"zIrc01+CaiLkIflfzz+//lgsB5tNZzlVTGBpr8oVeFKDJW83q9U0+FL0xauwhGPFr3mGjAAwAO+MOjsDAFycmYKgxmFqamZmpjgH"
-"8ASYO8MAuDSjzoBWWirNldQSlJ5BMIY0RRVWZQ6fmy7Cpxm8PKXOjAAw4WrBQg4EY5glh0gX1KXDcDxKjklapLm6ahw+7Maq5GXA"
-"5OfIS2TGn20fas/LM0cMeHaBNGE1niFL5FRKI5ZJ4SjNYJrzNpduCwjUaT4u0djlf7NBqjkaucf7kMbuDVSLNlLgLdDbWJkqA3zH"
-"n8pGOUaBWu3YcgLgAHBueaqcYKG7trgmILxcKgEH8F6ANgdJIAbAwIo5lci4NsnCOEkvkgKpEAdiBc5GQ5fn0WDDbKgQDWLLiJBB"
-"fZ00AWeebf9riM/6bXIcrrDeGseOrnVO/w3vEWi5SzG+A4pDOBdD/9NPPfV0GvvbySc3tepbINPRNPoWeRqQu5VQBkDcgXya5KBF"
-"OyUPllbOOs7ZlbTcSCTCC1DvvwGJ8B2IT8ky4dy555575oyQN9gNoOVpWuYpODMlBEILQKY6W7KYKrm4dFrMdNspT4mZHjDOqsb9"
-"k6TQ35xeWjt6zKjFLbzXXmk/034m+Ev/6/5xiPGNpaNGrfb4Gm/hvcVjzaTODjArANKApMRHSjdfqMraeaITlslD5Gtk29AfFSjE"
-"LXuLHEFRCKwtLq6lZAoXHQBRJthRK/GYGovACWZKrMSjy0qW3aROAf9tkuICMdcBK7ly1nZSRtWIdPHXgsU2i3IfpBboehQmEr+3"
-"FosYRtnUlDDY5RbcNpjvrixlEjFDza647+8tLh8zminKvg2mKRpfT0jGF4qnY83mxZiy91aWYbLFjLmlWPSQOnAAxa1yWvi0OZ7h"
-"/aqdmbqT5Ex2hpuCrKlpMAbmZhTQ62dRGpXiMDU1OztbBDwrgQCaAVFVAqmF0gg+gQKrlqanpkH/V+FMnaLmgoJXS+hcBXNBLZam"
-"SrMqGSuOxskjCDNkjlj+IRRM/mFyVBJJxkurTv2h75mxTHL8PyPPkOfJXwXT9szCvD0fyBXVuVR62f8O4M4F8qSfL5fQq8QFU1NI"
-"JlDUYtGEesHyCJllGrs++zuCwnIDzqhZJFw1TEIFXEKtUW1aiBO3xkJHrKUpKqSkj+ZUkbsjSLlef3xjpSMUIwRgMMwEJtUX2t56"
-"AkMdqAklFWcDc21pDVRicRfIWFpvFZPVQemVHFr0Y0Za+RUY6SZKKz8fVro+y3kSq04UX/HrJMW7BlpUUKe8hDTSDBbsZ//rtzGG"
-"zwYwvb7mUyFtHn1svfP0rdgsWfJgLLl4aDxK5/fRRlyRx3DdpxHOEzlCOlCS5ngkqWRryxYTl2UoF2KLiYeneOzGZ2n/YI54o8hG"
-"ToPBg/Lt6fTdxIp7wb/sX/Gf85+hxkbbb6dG8wXQ0C5Tewi5HeWsHBqA+kl/vybT7IFhk+1gtnCRKFJhEHxPC84BS7B4YMlMi77E"
-"MHo6FVPS9tbTp889dtSsJcLw/YUliD+w/6L9L9ong+NBM+ng6ce+UavVj57j7f7d4uNGLWmoewBXxkJ7KFkFyQaAH3CRWJU8mxic"
-"eCkfgmncKfRRnGYvurAIJcnoUcMyMarW4BpfzsVisbW+hCsrFoBrpzvCkG7aXDrGs8ALT00ZrOY1NECXMiIx85FyEhw5J5ERGyUJ"
-"Pw7W7SV7cYFF6UaqIQYGMSLBXdZBURsnEvomiUpJVraN8kpaWLbj5UybSUbj/cXFx2XNiApGyul/5Z9Im9UgaR8Hw3pjMXl2DZ6N"
-"bS+vhMzQ55Nb41KzVhYeKRG42KyxIpmZNfxv5TCBYfChoJ60mTxPGhWjYOVBQAHJDDmUk8yTpqrSzgL3pM3s5Emj1HIElkUm21lg"
-"GydV13HNulsVLrT/C/EH5GH/YcmFZiw0//r7K52RnQUbJs5m3N2mOqPNrbJ3nXcXxu0s2GN2FjidWEks2S5ubW1dNKT158UiTphd"
-"cG6UuYFUM9yzH/VrsSNJXEeP2QY34Tx8ls+4u3HRFf4yd3nLK8c7C8m48XOxs2ACcOX4ymyjYtjcUdZcSJ5l+wp/Sv6ttK9A2WFj"
-"o/8+p2HDgyRwMWivmfz6+vr6his2fyB50rkt7MgPxFqA0h3IROJW+ZwKi0seTPaGXMaLHWPXIHYh/gDOY7/Y1audS5cucefX0vtL"
-"XNYjwTEN7HqZ9wXSutB4XbGKZY/YOoYNVs/778GsiKVBtoIV/4d+F4TVFWnZLmKJDTZWWxuuIerp12tNx+5LwM3mDmHbTvnBuBts"
-"ol0Gt+R+JHYZ3I2VDTfGpIB5wKgDbCt2C7krfWZMOrYdxWOO7iYog9zH6mE7Ne22vI9PZOhdcRx3ZYzjq0t+6H+HRolOUSelYSt2"
-"1VGa+dOMBqbZOba0AxK4Ne77oDQ7Oe6urWXXEZD7D3/euXqVn591m+4vkzJNsZJ6RtOm5gasLVyptazmAhdrkuzM3WWYRiMAzYrp"
-"UtbJBdgINgfCoYpWBn6QnFwqmBWAjYmTS1VmmZMLrs0UqZMrd5chWanpXYaHut+IdxmqHgKkFyPYFfI/ya9BJ50NDgUnUrqUSXXZ"
-"V8iz5BKx8r1ZTb4cm4wAajAI4JNdWaNbDjEEjTiuRBeaKejcWHl/ZSNlEggPe1nyWcGHGD1J3dxYGcSmACzfcuKw8jbWNmJ/VR0h"
-"lAgocAV8QaNbG17irJJBNIWiBxqO0ziQu+XgViqusGFrRkqPRwX6DCiyGJ9NFGjDNNc6S5ucnEuXvHWhSbXO2aF9riVUkPPnz4s7"
-"gF5eDH7sgx0/89n58/wZeKILmYyAaqwPUBUcYNr1Ll0gObgK7IJ4Bqj2Q4gvJOxy/sqVV1588YLEO+sAvHcgr8vaLnRm3ZNsKLlY"
-"K3EseRvrG96ldaEg2l5ZrOSBvBlBsVfYa5sIw2ZirX1gXwouBX8ZvBKckj1KUMgwL/2Wa0zwoSZU70G5bjj2gOMLCykMbsp6M7tT"
-"M9cn24xwy96WJwaUjkKsjNiBbcSbEchxCSj2+cA302hMvJgxsbaNtbW1hCcTQUmSOYU/GygrU5OdMUw3AhZlLTiumpLzXiw/0hPJ"
-"yCnHb3YkVbuhW3MFI/UkcCYbGxtJT7c2LhpGipy/93/sd0GEf1O+COLS3Uo904zXFsdrUq9VAYCrtfqI1k+v4t3cnQnXbXJf0Exp"
-"bhZ9QTOgiqZ8QXRnYgZ9QSX0Bc2oczMz+AE+oYsIQHuG+4Kmsbg6RbcxptXEFzQz6gtyHAeku8OJOnv2bHZn4gjErv8Q3Zl4XN6Z"
-"cNxO4yFP2pn4B/K/yUtkOpizv5LxAbUokr8MS/ZFcoFYYzxATY7mTY7mjNEFnPecXoant92ZsCWAd5wxjp8UxJup5eymvD5epQIo"
-"7/BP5pmyWSme4exTB5zfknDe9irFioBMhy424fCpyFAP7ZnJPXNj/VKrmAL7NNqnekQUohEXoiZcAhPuTNgAebgvYaa9PG45Ixx0"
-"ctx/MfjzNosv+vHOBPXomRCfAMjsAnBuSj4b1JkvrHfivuOCa0l74Rdwx9iHCGcd6TkmMTqpT7ZEy2Wg1qZPX5E1Ab4DfZ7SwWLK"
-"VhuVL7ZgywugU3h0BDeoCMg+l1B3ObgMGI5YvhYAVKb4+grEVyC+SF6k1KV5/gr09QWI50EBb8mjBEMk9y9bMnHzIMitXzgfi1Kv"
-"VRQ7PUPulsyMBIvX5PZQNhEc8XWYM5y5eure+81150X7RfuH9snwZHAy6d/5q616vbV+h326u+6ZSXudSgWElTNMCauMtKqm3DxO"
-"wj2tvex9eOXO+u86sgRLRJhphyH34FD/DoTEvbM+CO0Wl3RUBCQj37q0jovOk+pcT8uu9CchysDuS5t9I8IsWA/XbRZJWvtYX08o"
-"++1v183UvViisT5wfw4TaYnwtd1YKeQ9MpI3L6BHMe++DyIuI9e2AsBgUJ9O+SlPziUo5/1Oes40DOGL8VAtYW6cCjCAg1xQIRkv"
-"DhrqtVoD74342XP2Pgxhpk4XQYodnJsCwTWHL37PxGF6em5urnRwdnYWxNwc3JwtHZybm52bhU+zFTgWp4tzYI6ACJwpUnk4VcHn"
-"iugQolsm0zNzpVz+4jpcAneoDIyUOujPECv4CvkKiL+vw9J5YqRECVj5L8hFgDKLzJE/gU9ZQeQGy/7f+39C/joqvll+q/RmbWST"
-"vAHDYxAz6AQXAlj+vhWMvrmVBDQH6UoTJiEISQNUSNBEhCpS/bXn/bo6QusUjd2gG7CznOA4koAhrptXIiakSoWn3Q4CGfKubQNC"
-"zOFfTsVREdUi36ICqgJAYRBnbIki/MVy38pppQKjiuIJBJRfJEVSzBGPKFA68LQCMa+OBjlOS1yh8URme4HVwehESuukRowcSq/x"
-"cbg2ZjxMchWA+QLcs4COJdlUSQZcVl/4hQzeBKrfgrGCEfFJMGbjB2Ze/punGGh+IdD8jGpA9Z1KvWaQNJRofg1Q/sKb33lz+c3v"
-"vHshXCC1QPPTQ9gA2W3B4KHB9oL/aTA6hFfQoMO/zKwbIUv3Dd+hk2VDBw1f93Pq8FFGs5hXR5e+weFIf3cq4Yyl43zwArRyMhil"
-"Q1DQjWnJqNksjFxwJJXicnANWA6/yNEBlsB+5dWRot+N3OjHELvONYhyC0mlL0P8MRB2DeKVDGFC2btMlRsb7h73dZI3yGKKxgzQ"
-"SB1KZhOywyYbpjuvcxgsqui58BefflpWEXkY+nWSjiO99eV4IqcvnwZsC+8EbaeRs7LvvH3+7QtvXXvras/smRHEke6+gEhNn21A"
-"LVdkT4SoA0p8E1bkeEq7vuprFD1M6LOT3pZ1E9HKcTgIcG9gQbz0Fu9LQ3Bl6NNBYB33d9xHGzDpMe52B0BThWlHcOqOQIUtoBE1"
-"VjqhGcD4EdD9IwnMFBpPxfLhWkaNTyMmovPlNFqajtN3ctk7XSmCuZlH6aiFICt2IxcSS8Hmtsclui69tLUg60AjQxhde/eKcZ7H"
-"/EEeQ1iORM2THsmqEtPAiN1+gBTJZPQcJ026d87uVJbMBHLYqGflUkrMn8qy/oX1J1rmCMOjMvyi3aVGxsnM2r9w1aybVy/IdVzF"
-"OuqxNtkBg8N1OvJLCKhA1KmagEemUGjpV1wWpO9jEF6wTouV43WZOzXEbHeDb+Uso7ppiq6B7lqerZRRdy1PF0FBjUOxWC6XSxVQ"
-"V8ugvpZBlZ2plMuz5Tn4NKfBEXTXMuiusyU4nZ0FtXdaw+dUdNgfBJV2dnq2PDNedZV01zzVdSoo+wd9K3yEPALy/gHydYjZl2Za"
-"5Mdg+nrAEZqv+c8CmqVfoDHsjWALdNcfOqc+Km5NbZU/yir2DagdR7Rld+wL4XmQLHq4neoKKiqyEiisNb4DiZor1V15zdXnOkbn"
-"uVHdlelwqLnka3NUNMqt5eiuCXLUalW2TSDprg2qpJznEWVDY0Qf/JdU10ui5Y/qpbi2hO7qjrxow0qoUJdKX7UZ1Ts1gG+dfJPB"
-"rq9SDTNPVenwGvLqAElMS3Bpm9OXLjy3ve7a4ooZc03giLRGxuMac+X413zLT8NuMuAyXosLGaRsK4FOHTEg8wPS3r3mKnRXJVBG"
-"tVfzTHFEd1WDmt2sXvho45crv1z5aOVXF8ImqdlakJaiOuAaeu67VKUJwxytk6pDTPsc1TuZxpjEUd21C6qZEzghi1R33FEv7fo7"
-"lcgKSD0w2nj1Cm/HCPXMMAoKuqETxzzV1Rm54MQFcQSY7toBWq75oGZmRswZidm+uBC8nte79rcYrxgOxEyJ0A09iJ3wangF4uUw"
-"24runwwcqR+jmnpiL4xTZvPqKIBplK8O4/HyiFKNqqyDEAAwocJyOz/CH8Mgq8rWx1gUIgIdmRJhaNM7J/xT/inKs5WsLH79/OtX"
-"tq5sXf3NE79peS3XdOvuSCvwtM6ttVPQlxeCrMJ8JVZ3heGeAyigzGIJrsxKdXgJu3iyLgsoXGUOxVxdtgho+IjfDMjOYUB12eo4"
-"VRawErV06gS1cpiSLWYWRxZygzlcYgxlsGv5sriw/DzVDaGz69sjyqzZFLpshvOylSr+1+IHE0rlmHIMpJepdMGxQ6kOsVCFkZm3"
-"0jOEdd0rb115O4lkGwMxS1h6PHjncpXZ7DSMrs3RAcIo5jlLugm6rKUutTK6bFaZTROeN5V3fNx4uEaeALIbOZYc6K/NC020v58M"
-"MRrhaAmmwdep+xsl57hWvhm3gjFeDV2tUTfdxPRH4V3mGrARa7+VWF1YGNV/08Xkx/O136fHGpHYhxbtTTqAQjtfOTxfnIG/+AWq"
-"ShxKpfn5+fJhTdPmK5XqvKpWDx6en9fmNfikPaRVtBl1Zn52tlIpVyozlYqqHlQfxOdAf64cPHTwYLmiVuYP7gQDdZIHqePsb0JO"
-"+CKSiUPhbaK8RZQaJmuAqdikCRZnH1PZJuWQ1ANMYwJqiVpgRaeaoGIQC860SOkp7tccK9KDtIUWLx9QgIvkWpmcr5PzNXKtSboO"
-"aV0IyGch+SAs/NRWIFVCVQuL6naQqYZEi0ijikqhRpN+k1i3ycufkZcHxIXkEdMj+oBoH441QMbULfRJ3GQypMg2ner0fmoXgFtk"
-"jYxmXeH8b2R4E/l1JeiCsOr6K0HeC//bTVyQSmzuMhe3D2D5GUYWGjudzjblE6gpFsECrNeoFWTbYaotDSwnMzIcNxUMx4z0UMuh"
-"SgOUOsHBLx2tntUjOc5LKzweER4LoRIwYW0SK7KinPKBFT7Ky2qBFhb4ky9E3VDPWStKqIRqqEH8angSIqpl3V63VwgxjpbHVhln"
-"AO8zytAAiB7F+oM8ntWiRhV5CmyAyIs8HB1QZXB88pi9G3U59dhXjCpVTzTKWTnjCSsQx5+NOM4FmwET6Bwz/lgmcnHGQGG1erCk"
-"HKA/tIK88eGMkOKHzHWj6YxjoyLKzkKfaCEqLybqlngOV1CKFsluA+P80fMJQ5M2C2JSjaji1cAjnMOVFr07PsC6Dc4HBZyPQKiL"
-"hHtRG+OWbY+ogEUqqSu+8X+C4/3gxNvB+bItUnDivwTHh77xO1I/QDQNCxeySwBaY/wZNaKG00DOMax+t+/ChyinYSu0eqbLIvIq"
-"/GXBg/WVw89KT+s1SiZ/oYBFQFHSKGk9pTdmFmA2e4i0ZouYDZo0kdjHFt6FMnktJuvIJCzK5+PW9fjy5sjOE+9XvzEV96sDseE1"
-"zEajoQ3G9YsTLyXGY6PXzcY40JTCuOumGyXDYrZMz+w9GcG8BRZgI6LKk5HZg6stU89pY2zMHzcqf9UAkqXR9A6mU78ITv4Rk/EF"
-"TXcCQ+FpOyHSIC2aLJZ+Rk79jJz8GJMxoKlDUwvTdnI8IlqPNEys0NVyElyHu1BGjcbyD+PzeEiRu7fjh92026ftuhSwGqPtRmJ9"
-"Qashoik9x5DDFRryquNWXZyhQI+AgB4ypNPrRnnyYtgf9hHx82POnNRzIzJPT81ZfRREGpRcw4QThBEt0kJEmXHKlwMSi4W+a/Qd"
-"E9JW9OQHmL76QajfDvWbmLSbAaQxY++2cJYars7aChDTAMBg5CDljBsOqueavQbqEVh+h3FAmQ0j2ytECpYONNC0UM/3QK/t9nP4"
-"B6KxTbQkazsI6VsLRq1WL5crxWLaQu+MaIBy7OTsBIK2poTIYw1oqUzuWRgGw0BY4Aapkb00hXiE+ogOegnu174Mfxs5q1KM20m+"
-"PgwamBQ6GY6vHxApNO1E9pi2las3igI6rHSzl2iaJmgwurt9/QZoO8gftP4m6EVhnl6k+4gcQ3/oj2LrNnpBPj1OExBdXt+p8QHk"
-"MlJx5A0jYiRh3HVDliMx57oGjDeVJaDWnApOQu9z6jfy6s8LJ28H1jA0/xCabmg4OWkH/pmkvyP8EEnjGY3hB7n+EX4TozHxfIk4"
-"Wn9gBVmbcLsRA3slcNvo7bLQ+ghfCLu5erWQ5KP8Zvn6NjZ9xs6i9De2GU9gfceNjNAInwy/GugB7phpE/gMnDvBy3d8SCd/j8n6"
-"78T6BdEtmhqYdgjY5pOhaE8PngzdyIl2ptMEO0zQCUgPdk8rd/11wy5abhTnmeMWr+To4JESKZLkQFxPPoHdGRWiMesitTha6ecC"
-"BesN5HpbkwGq/hNUKZv9XeKwCpylBzodmZxfRSCluYOH52sPqnPwd2Z2ZmY+DrOzhw8frtQeOHTocLV6+PDMzANa7fDhQ4cPzVcf"
-"eODIA/PzczNzh8vl6nxlvjo7P18qVUuPzFfn58uVufnqQ1q1Mj8zf1ibkEw9E4V7RL43ZiEHcty9oLpDyG1SYOl9og9DlpTXifJT"
-"otSJNfRZKhqkwlJzJ7eLzxOIar1PrD558qf4GxCQrIDoPdQUFbDZfobp+M+otdBHF1X84LifMtBJaF0PXrnlX970L98mmD4gr2wR"
-"6+2efrJPTnxArrxOzr9O7rxe2Hy9cOMD5XpfIb2d/USgMfeRKu1V6iDz8aU60Or0T0Prcwri3cCzAk/3W4BTwwDGR/1i3KLcWTqw"
-"9alxGziNYuwa3lXJqL5mUs8Zu6+RtG6nxXXWc1Y+7qEvNa9GgK6AtFejpWZxD34EqhJlEowHS6O39hZaPDLhMUktXR/jl1H5WnEc"
-"4771FboxX+Trsh5vohukSfcsbBKScDsPbA/XQstEI99r0KRLiV6BW1AAiqEJF+5MNShkOk2PhKSwU9IHPE1SLfog+sTwyIJJfT8m"
-"vseLqQeSgWrhsDp81PWZqT+JRwkWOKsWv4Ju8jpVaqzC6sPKWzw1O1gMCusTDAKS1CMKTVibSyouAdFeB6XVxddCHJBxQ55QVWFp"
-"RwW+z5MpiLXEsFQ7CakytdoE1CoCavQpPq5PRvh4d0A6LdIRXpIWrOMW5wQlmtTBh7MgzRSmCOcLZh+mTAlw1jD5CHGTiKYYwFst"
-"6pxi/NnDqdTZxQZnXTiH1vX+Nq6H1HKASmDEWh7xWklqdWglA6J9zLmuydxhEdEmFW2NjHOxsYOzcecnmRrbnKRxOrxgvgxxknXq"
-"vIUEJ8jgQ/SyYwGyBzEtwez4K7sKVeHURcE7oD8RBIMMqevDR014d6s727lWxHcOIqZZQuRvNrG4LXSTwjBQb4UacerEqHXfNoZv"
-"N+/+9PimnODK3xrDqNYN6rjj1Iby8NSYn+GjqyySAAF48n8QDVKLq+ANnbR0rth0h76nBq4a9JSdxxFZka6ylp4kpr3wi6B2az4m"
-"rJ/e2ln7QLe+OiTaELflWgUcdG8kIdIUsAAUg8KFCfRgTu0QCAOS0JXZUiCFUqIX4RZqNRNQa/UxCkmZ/oTrH+NentxO8rIRGkCn"
-"fW3o6zf8FvGTEdIDnhTWuUC/GWjAUMOgMIFEYg7eTIqXVe7d1rY7raQ1Qdz7k+iW6wOqh/ldoWwHQAyo2qKgiRIroEcqelt9RNiW"
-"FTNEuPeubDfZ3FHYt67TdKNvbdJ0F5LX+sxrDb1WhybPa5k0CRmwM1MrAaYbNG3SdAdT6wuaXgla3aBl0aTTpO00ZdIS1IHB+EIJ"
-"vZGEK0YNoAAU2/0SFMCQxoYWyUn3hFq2bcetm2AHeLMkhGtx7YZpAZhknJtgbNWeUCLAMJkiTKHkhuAADUH8rJMFHbc/YltwWwct"
-"DbgFPT5uu+z9iZLm67qvDymVE8A4SBCQIx4m3+STjbKGCR2QPiCDUBj1cUSYeJpEtWNuIR2ElK76nsWyab1Bc+vUG6T1yhukceUd"
-"yJ8Q/fLHRP/8Y6J9OmA57LMcQKvBxM4T6IRJGVXXKeGUakYvJCZUoTd6CwtALz0NpejOIwTFIFGmwmc9anNTC0ChVkVu2tn8i7V7"
-"CzcW8LvEzCaIUNMEuoDlmbHSkQtvt25xR9E3yXaRlck+iUagTQ3CJjUOa9xUZGZjkRqRClH8cW2q28b8NrknkHa5j7vh6hukQnfP"
-"yf0Kw2iYuANpd4tfskYttHpWH/R/U+vjxr1nel4XzvTtdhXMTOpx1cyigBbvtiMCWxxqzN6EBKmh3rN6rZpHRGzVrF7+bqFsVMhJ"
-"+xlaN4iwTNwJ68lrCQNqgGV2QVC/1fIa3QFGIKhiDfSBOqZHKnWDgqlGN7hAv5lYN8mdnwm70kJzGfBfH2Mfj52yFhrBZmPitwji"
-"t2vyXybIu2l6/V6U/5KA/HrB9q8WmCNhd4xuRtDlf4Q+D5FPcfTQEbR93lv4cmM74hoQ3CdiqwWrs6dGeyFo2/WZYZF9Y8302hw7"
-"PfiCiFVlHsnJNje5sxoM427kNl36uiesStd2u/j6QriTyj0MMaZXJr6kNomDafxLOfE7RombZVKo6TXclkcXTAvffcA3H/j7CJMT"
-"xHbePM81+xFLrd9F+ochS9rt7d+DGH0tAkjRgQwkgr7m1Wu5num2Ju4KdsSNOxKyVwatbTakcCu8K16U4C9TsmvbqlKorWNKe2OZ"
-"P06nXlQ94JpOqgx9Ksciqu8yjmyh0FYDbF4JUooWa5UIcpNbgaA1GLsNNX6vo61/jta00fXJHoFLoROsRzqdrHF+moPVBxqPHNXn"
-"qvC3olUOPhKHSqXRaDx4tP6VI41HHmk0Dh6sP3y0oR/R60ce+Wr9WP3IkerBauPQodqRB4/UqkeOlMu18mNHHjly5NCD80cefvTh"
-"hx88cvBI4+H7o0ip4fgoGzby9clrZ6bIuHQ/g6ax3BAZmgeZpA2HkZyJCzhLs8tyBGg6RPdMkgshqL6fYgZWvSXlzeDL01nP5KFP"
-"FCBLG/Zo1n/jEv3tEmTC8m8gg22hDcHwgPvKEBYUvkcFGhCpd2iuQm7UQSMaYoY6oD4Vvbj1nPb2zEZgD+g9WMVWHw4tD1aNBzYt"
-"iEF6gBH3wDSFA4y710Kb3MMtjj4Msd6LOlDB59DVwh2gS9m8C4fbm9Cjm/RwIySaCoeGuskPpgJFXAUKuwV4LCKdfWYXfCEWhqrA"
-"s9IzwLorUbMcM8IWejiUYaGnDq/3tOGtSP/kTqS/8UVkqcPQUiAXgF18yPhtghA3cYcBsFioApspw7s9MrzR3wtpek780qFX6NE3"
-"MCL2fqFGI6jvfibyO+xtZyxfiAq9cTveOn7vW5SNS4+LSrp9f4JehTwthL57J+h8BmPMHQe4HTIkcAWuw9245H0KuJO+Q9YYO8R5"
-"kmfuITwGSaQTTRpjXujZ2QUp4v2gdaJtOvrFD7ZhxL4uknxhQ7zGoKdejnDjR3YRugS3lgBZJbS+A2x4CywOf7CrjM/gs6IerBPr"
-"3mYHalcBMVPLZvTzfImsgTmZzftDK0q3gEotJr0gg3FTV/qkSnFYZI7NaBCi4YJvdSJtQw7VfXYLrSEmCdN5P4KCW64giWVa67gV"
-"q3AaKX0oUth8FqAsO8frcl/6pAm5paKZjhkMV1pnQNvYn2WEgxHhNzZY7kboVqO58PuIKHch3wZNAbJ2E9pWWW5BNvG7OOg+yGQ6"
-"wNm8H6TydZDKPkky14C0eO3B2oGxK4nxpN/eHtBz5JmG2k94iT4TUD7bl4B8J9QGunbx9QUDUKtEb+nvMF5mc8rn91MYvyDJupS1"
-"T/u0P0y7iyjPkO7+yIK4fSnH60isJbGeaA5Y/3Sx7hnuUfUrGeKY1WmO9mlcAaNUaX7puoWx0QPIPv/7aT+Fl6J8LgbfGsRrXzyD"
-"bewPrYgF2D7jScpnmzDf1/tSHiR5E2lhGXFTHaJNzAayBPNRUXuct0PKq4jXhf69lKS7lrF7qBW1DPZS8JcIbTTX+aILqFmDb5xR"
-"C8fH3Z6EdRH/cX5xnrEMNYGG/Flq5LfJfQ4jOuAu79+rgD8wqpFk3Ci/4bhZ8SAKIBDj7uO9AuVRadx5XfsyVn26i40v0aB7x9TD"
-"JjSBifqJAI26iD+FvtjqlPTP+MrorS8j7RHxdBwNCzEZv65YiEgfPVgt3AVsUDWfaIUvbsMK/uNtv6ENN/269gYcdBUOYMr6Zv7h"
-"Nhb5kEDhj0kDIQEq6GFVIbMDqCMUGlrAJrFxROnuMOQEKXsAB/xVWHwzX2ShC2CGtgt/gIH7A/Tuc8gRvncHOBV2YAYwd5FXoe2h"
-"LzL1loDBCHcwY4lwsE8KAdOxehy/ETeh7QBzV8oCU4WsF+XwHlImZ0ozux8/s0/WIupYXWBMqFsZ4stUQ+BlsDiiAtVFrWAC9Trg"
-"eis8g8+qvC6sE+umbezLuAbpscK5DIYBjBE6A/BrIpgjPVDHZLyHZbAsPkPdHn4yrj3axv7QOqrD6xIqxTnW86ScVy64d3bBPaE1"
-"J+8X0AKS+MBbAfBYoKLs6asBsFgwyq/DcDRrIX6lCneP8EukwK/o8gqhrhDqDLFu3JzdH1VbCyfKw+FonvTZQAv3Rtvu472pFR2Q"
-"Q38ISml/Qo9Gsn67PsVV1JU3gWdvAz9+CPrsJyHHCp96n1Gdon/p54Ddx3JYHp/D5xk+I94iPlCs+JJm1pdKw76c9gfnAel6hfig"
-"wKFPD6Ae6YP4MMT3Sj/RfgEHHQ4fvgMC6MNf4GEAh9vxYbMvDrd68SFCaUXyD/uqA4r1S3OP5z7PA56HkD95g+UPPwz125g/C/VN"
-"zLDGbvEciNzl2eJZD/dNxqLNxOSrT/XlHtQfUpkVWSCbLJ9mGEQlk/GaSstQ+YXIBc9qDPt8KmORQfZNxoaSjE3pLhmdhK+9WHYK"
-"+RneP1lwX8ZV+GfQkYBMjNRrwd7HtZ+M162sXjhgWBTrhNIzMU4NpPJiLuK4P/xK/XjcTxXrAx7R/TJ1rdAc5u3sDbjZMaBOlyrk"
-"Opzr19O6rkZ19/1hgiHMUzbH//pnP/O+6AP7E5nUB00m6vrIq0zfHjB+tfaHBdAWEnYR2kgxp/kJBiSWU4fZW5DR9qJ2GGRqlw2Z"
-"P1nYaykbztpfl0EXqB50UZGwyLDAD9f5oadfH17Hw42efuszOGzevRFpm3c38XA70u7chsPdzdshHO6G6l2QEervb8BheOMzQITr"
-"qG7SQyE+EISJ+DDYN/ec6A4dZFRzYLjpMA/ZMOPw/rHP3PLysMomMnfb4zLGqVA/x+8wDeh0IXSzXwmi5m+4P+yCdVn0i6dwZDD1"
-"KXMPq1/I7mHuIqbbRQFzFaObdtK8L27l4UiO92DiLRq+F2NxGrvcfSy2anqsSLyTw1wKqbwHgOjz6O8y8ufG1St+Xs5NfataT31v"
-"mm06sg1I8Wt3+b9lkd5ILewy7nr7VYu9C/QrGQTfL+sD9/daRAl1wr5hp+wvkvxTCqCQsDR6i35RBN2Yqo8u4sL9fIdggs1GHd0r"
-"EaSG2qsW8DsIAEcaNWisIf0uVIEmpW/dxCtwXfvHvvr5Xs2dWDfJyzdBl3onknwcAFCfD9I+Od9iWb72uay7QH6nR+va59DFDRl1"
-"COon/tqEFYZWsGD5/AuzPOHPRSzALZ0WU9FnEXwZ1WQwNhd6IGUGbLNHKKu4CUQ3g3BzimSyP2ajaMDq2u8VwQYr0oYgxXvIR34f"
-"v183HCSJD1lZDz3gOHXYRwV1Fz7TwlCFqIEFiXtB3aGI6T2ibNy/Pu7/FGBme86aKvap2d7yJHv2k62tXrJOcN2E0l6xP3ney8oX"
-"Mf1p+3hvamXRoh6twfhfW9H93DTQr/d10E5vRvobof5OgC6YofixCvYlx18EeB3uQhkoCeXhKX+4h8HaTbxXckK/GXSAez7Hvv2R"
-"+uKpUx4Onw7B3LiFfhx6CNCz4+/pcF8E3v//VbDbNwDC5A0EfLtiU3oLgaJKh2fprYTN9BsJClXl/fs0rvsjubdFMv+fImpvl3e5"
-"1CiiBFQxC/QI/UWJy9nfLu2XTqjRpnGTXAks0uZ6DfY80HAHhv42uxItKJGpRhaoQph8da/Lgf2ER5yogyhJmbuphK+y8ITfFx/e"
-"E9b2B7vP6AS8k7DKvdOzOmTQIf0uoTo6uk56+o1IR39JpN0O1bs0fRYo6ArxFXSDoCcEoWVw79G2q4QWsZSoSyw16vDDTTjoN2Eg"
-"9Dd6sODfcPlB+9CDwydPgsrzMT1Y+JPa9KDjry2Jg8IOMPfKPZQaXTacILpvRxo6mPgQssErYMLhhOtwF0Yailk3ejAJXdK/dxOr"
-"sYm9yydWSajCRNjEdum7dB36PSz6VXWN/vjRbhVfsa55Sl6Qod9Wj7+qrrEf1coU3iv2oMemR+jeLroRrAkcT10mKbUBf8+oz87x"
-"GtsO2C77rB2dt6uO93io/v7EHaAwSnqgDeRNjZ1ykPRCm3D05JEToxfdOzQAo6atDq8nb6OpQ798P2BoNHi4ghWxguUkUJJM8Lsu"
-"2fD/AOHfhp4="
-)
+FONT_BLOB = "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"  # __GENERATED__
+
+_FONT = None
 
 
-def _decode_font():
-    """Unpack the embedded font blob into {(weight, size): glyph table}."""
-    raw = zlib.decompress(base64.b64decode(FONT_B64))
-    fonts = {}
-    pos = 0
-    for weight, size, height in FONT_COMBOS:
-        widths = raw[pos:pos + len(CHARSET)]
-        pos += len(CHARSET)
-        glyphs = {}
-        for i, ch in enumerate(CHARSET):
-            w = widths[i]
-            nbytes = height * ((w + 7) // 8)
-            glyphs[ch] = (w, raw[pos:pos + nbytes])
-            pos += nbytes
-        fonts[(weight, size)] = (height, glyphs)
-    return fonts
+def _font():
+    global _FONT
+    if _FONT is None:
+        _FONT = json.loads(zlib.decompress(base64.b64decode(FONT_BLOB)))
+    return _FONT
 
 
-FONTS = _decode_font()
+def _glyphs(name):
+    return _font()["fonts"][name]["glyphs"]
 
 
-def text_width(text, weight, size):
-    _, glyphs = FONTS[(weight, size)]
+def text_width(text, name, scale=1):
+    g = _glyphs(name)
     total = 0
     for ch in text:
-        g = glyphs.get(ch)
-        total += g[0] if g else size // 2
+        rec = g.get(ch) or g.get("?")
+        total += rec[0] * scale
     return total
 
 
-def draw_text(cv, x, y, text, colour, weight, size):
-    """Draw one line of text with its top at y.  Returns the width drawn."""
-    height, glyphs = FONTS[(weight, size)]
+def _blit(cv, x, y, w, h, rows, color, scale):
+    stride = (w + 7) // 8
+    for yy in range(h):
+        for xx in range(w):
+            byte = rows[yy * stride + xx // 8]
+            if byte & (0x80 >> (xx % 8)):
+                if scale == 1:
+                    cv.set(x + xx, y + yy, color)
+                else:
+                    cv.fill(x + xx * scale, y + yy * scale, scale, scale, color)
+
+
+def draw_text(cv, x, y, text, name, color, scale=1):
+    """Draw text; returns the x just past the last glyph.
+
+    Each glyph carries its ink-box top relative to the font's ascender
+    line, so every glyph in a line shares one baseline: draw at y + top.
+    """
+    g = _glyphs(name)
     cx = x
     for ch in text:
-        g = glyphs.get(ch)
-        if g is None:
-            cx += size // 2
-            continue
-        w, data = g
-        rowbytes = (w + 7) // 8
-        for row in range(height):
-            base = row * rowbytes
-            for col in range(w):
-                if data[base + col // 8] & (0x80 >> (col % 8)):
-                    cv.set(cx + col, y + row, colour)
-        cx += w
-    return cx - x
+        rec = g.get(ch) or g.get("?")
+        adv, w, h, top, b64 = rec
+        if w and h:
+            rows = base64.b64decode(b64)
+            _blit(cv, cx, y + top, w, h, rows, color, scale)
+        cx += adv * scale
+    return cx
 
 
-def draw_text_centred(cv, cx, y, text, colour, weight, size):
-    draw_text(cv, cx - text_width(text, weight, size) // 2, y, text,
-              colour, weight, size)
-
-
-def wrap_text(text, weight, size, max_width):
-    """Greedy word wrap; returns a list of lines that fit max_width."""
+def wrap(text, name, scale, max_w):
+    """Greedy word wrap; returns a list of lines fitting max_w."""
     words = text.split(" ")
     lines = []
     cur = ""
     for word in words:
         trial = word if not cur else cur + " " + word
-        if text_width(trial, weight, size) <= max_width:
+        if text_width(trial, name, scale) <= max_w or not cur:
             cur = trial
         else:
-            if cur:
-                lines.append(cur)
+            lines.append(cur)
             cur = word
     if cur:
         lines.append(cur)
     return lines
 
 
-def draw_wrapped(cv, x, y, text, colour, weight, size, max_width, leading):
-    lines = wrap_text(text, weight, size, max_width)
+def draw_wrapped(cv, x, y, text, name, color, scale, max_w, leading):
+    lines = wrap(text, name, scale, max_w)
     for i, line in enumerate(lines):
-        draw_text(cv, x, y + i * leading, line, colour, weight, size)
+        draw_text(cv, x, y + i * leading, line, name, color, scale)
     return len(lines)
 
 
-# ------------------------------------------------------------------- canvas
+# ------------------------------------------------------------------ canvas
 class Canvas:
     def __init__(self, w, h, bg):
         self.w = w
         self.h = h
         self.buf = bytearray(bg * (w * h))
 
-    def set(self, x, y, colour):
+    def set(self, x, y, color):
         if 0 <= x < self.w and 0 <= y < self.h:
             i = (y * self.w + x) * 3
-            self.buf[i] = colour[0]
-            self.buf[i + 1] = colour[1]
-            self.buf[i + 2] = colour[2]
+            self.buf[i:i + 3] = bytes(color)
 
-    def rect(self, x, y, w, h, colour):
-        x0, y0 = max(0, x), max(0, y)
-        x1, y1 = min(self.w, x + w), min(self.h, y + h)
+    def fill(self, x, y, w, h, color):
+        x0 = max(0, x)
+        y0 = max(0, y)
+        x1 = min(self.w, x + w)
+        y1 = min(self.h, y + h)
+        row = bytes(color) * (x1 - x0)
         for yy in range(y0, y1):
             i = (yy * self.w + x0) * 3
-            for xx in range(x0, x1):
-                self.buf[i] = colour[0]
-                self.buf[i + 1] = colour[1]
-                self.buf[i + 2] = colour[2]
-                i += 3
+            self.buf[i:i + len(row)] = row
 
-    def rect_outline(self, x, y, w, h, colour, thick=1):
-        self.rect(x, y, w, thick, colour)
-        self.rect(x, y + h - thick, w, thick, colour)
-        self.rect(x, y, thick, h, colour)
-        self.rect(x + w - thick, y, thick, h, colour)
+    def hline(self, x, y, w, color):
+        self.fill(x, y, w, 1, color)
 
-    def hline(self, x0, x1, y, colour, thick=1):
-        for t in range(thick):
-            for x in range(min(x0, x1), max(x0, x1) + 1):
-                self.set(x, y + t, colour)
+    def vline(self, x, y, h, color):
+        self.fill(x, y, 1, h, color)
 
-    def vline(self, x, y0, y1, colour, thick=1):
-        for t in range(thick):
-            for y in range(min(y0, y1), max(y0, y1) + 1):
-                self.set(x + t, y, colour)
+    def line(self, x0, y0, x1, y1, color):
+        dx = abs(x1 - x0)
+        dy = -abs(y1 - y0)
+        sx = 1 if x0 < x1 else -1
+        sy = 1 if y0 < y1 else -1
+        err = dx + dy
+        while True:
+            self.set(x0, y0, color)
+            if x0 == x1 and y0 == y1:
+                break
+            e2 = 2 * err
+            if e2 >= dy:
+                err += dy
+                x0 += sx
+            if e2 <= dx:
+                err += dx
+                y0 += sy
 
-    def line(self, x0, y0, x1, y1, colour, thick=1):
-        dx = x1 - x0
-        dy = y1 - y0
-        steps = max(abs(dx), abs(dy), 1)
-        for s in range(steps + 1):
-            x = x0 + dx * s // steps
-            y = y0 + dy * s // steps
-            if thick <= 1:
-                self.set(x, y, colour)
-            else:
-                r = thick // 2
-                for ox in range(-r, r + 1):
-                    for oy in range(-r, r + 1):
-                        if ox * ox + oy * oy <= r * r + 1:
-                            self.set(x + ox, y + oy, colour)
+    def circle(self, cx, cy, r, color):
+        for yy in range(-r, r + 1):
+            half = int(math.sqrt(max(0, r * r - yy * yy)))
+            self.fill(cx - half, cy + yy, half * 2 + 1, 1, color)
 
-    def circle(self, cx, cy, r, colour, fill=True):
-        if fill:
-            for dy in range(-r, r + 1):
-                half = int(math.sqrt(max(0, r * r - dy * dy)))
-                for dx in range(-half, half + 1):
-                    self.set(cx + dx, cy + dy, colour)
-        else:
-            steps = max(24, int(2 * math.pi * r))
-            for s in range(steps):
-                a = 2 * math.pi * s / steps
-                self.set(cx + int(r * math.cos(a) + 0.5),
-                         cy + int(r * math.sin(a) + 0.5), colour)
+    def ellipse(self, cx, cy, rx, ry, color):
+        for yy in range(-ry, ry + 1):
+            t = 1.0 - (yy * yy) / float(ry * ry)
+            half = int(rx * math.sqrt(max(0.0, t)))
+            self.fill(cx - half, cy + yy, half * 2 + 1, 1, color)
 
-    def ellipse(self, cx, cy, rx, ry, colour, fill=True):
-        if fill:
-            for dy in range(-ry, ry + 1):
-                half = int(rx * math.sqrt(max(0.0, 1.0 - (dy * dy) / float(ry * ry))))
-                for dx in range(-half, half + 1):
-                    self.set(cx + dx, cy + dy, colour)
-        else:
-            steps = max(24, int(2 * math.pi * max(rx, ry)))
-            for s in range(steps):
-                a = 2 * math.pi * s / steps
-                self.set(cx + int(rx * math.cos(a) + 0.5),
-                         cy + int(ry * math.sin(a) + 0.5), colour)
-
-    def poly(self, points, colour, fill=True):
-        if fill:
-            ys = [p[1] for p in points]
-            for y in range(min(ys), max(ys) + 1):
-                xs = []
-                n = len(points)
-                for i in range(n):
-                    x0, y0 = points[i]
-                    x1, y1 = points[(i + 1) % n]
-                    if (y0 <= y < y1) or (y1 <= y < y0):
-                        xs.append(x0 + (y - y0) * (x1 - x0) // (y1 - y0))
-                xs.sort()
-                for k in range(0, len(xs) - 1, 2):
-                    for x in range(xs[k], xs[k + 1] + 1):
-                        self.set(x, y, colour)
-        else:
-            n = len(points)
+    def polygon(self, pts, color):
+        # scanline fill, integer math, deterministic order
+        ys = [p[1] for p in pts]
+        for y in range(min(ys), max(ys) + 1):
+            xs = []
+            n = len(pts)
             for i in range(n):
-                x0, y0 = points[i]
-                x1, y1 = points[(i + 1) % n]
-                self.line(x0, y0, x1, y1, colour)
+                x0, y0 = pts[i]
+                x1, y1 = pts[(i + 1) % n]
+                if (y0 <= y < y1) or (y1 <= y < y0):
+                    t = (y - y0) / float(y1 - y0)
+                    xs.append(x0 + t * (x1 - x0))
+            xs.sort()
+            for k in range(0, len(xs) - 1, 2):
+                self.fill(int(math.ceil(xs[k])), y,
+                          int(math.floor(xs[k + 1])) - int(math.ceil(xs[k])) + 1, 1, color)
+
+    def rect(self, x, y, w, h, color):
+        self.hline(x, y, w, color)
+        self.hline(x, y + h - 1, w, color)
+        self.vline(x, y, h, color)
+        self.vline(x + w - 1, y, h, color)
 
 
-# ----------------------------------------------------------------- PNG output
 def write_png(path, cv):
-    raw = bytearray()
+    raw = b""
     for y in range(cv.h):
-        raw.append(0)
-        raw.extend(cv.buf[y * cv.w * 3:(y + 1) * cv.w * 3])
-    data = zlib.compress(bytes(raw), 9)
+        raw += b"\x00" + bytes(cv.buf[y * cv.w * 3:(y + 1) * cv.w * 3])
 
-    def chunk(kind, payload):
-        out = struct.pack(">I", len(payload)) + kind + payload
-        out += struct.pack(">I", zlib.crc32(kind + payload) & 0xFFFFFFFF)
-        return out
+    def chunk(kind, data):
+        c = struct.pack(">I", len(data)) + kind + data
+        c += struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
+        return c
 
     ihdr = struct.pack(">IIBBBBB", cv.w, cv.h, 8, 2, 0, 0, 0)
-    png = b"\x89PNG\r\n\x1a\n"
-    png += chunk(b"IHDR", ihdr)
-    png += chunk(b"IDAT", data)
-    png += chunk(b"IEND", b"")
+    png = (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) +
+           chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b""))
     with open(path, "wb") as f:
         f.write(png)
 
-# --------------------------------------------------------------- pictograms
-# Each pictogram draws inside a square of side s with top-left corner
-# (x, y).  All coordinates below live on a 0..100 grid, scaled by s/100.
-# fg is the main ink colour, accent a second colour (usually RED).
 
-def draw_pic(cv, kind, x, y, s, fg, accent):
-    u = s / 100.0
+# ------------------------------------------------------------------ scenes
+# Every scene draws inside its box (x, y, w, h) with flat shapes only.
+# The scenes are the front page's pictures: a viewer who cannot read the
+# headlines should still tell, from each picture, what the story is.
 
-    def P(px, py):
-        return (int(x + px * u + 0.5), int(y + py * u + 0.5))
+def _stars(cv, x, y, w, h, n, seed):
+    # deterministic pseudo-random stars from a tiny LCG
+    s = seed
+    for _ in range(n):
+        s = (s * 1103515245 + 12345) & 0x7FFFFFFF
+        sx = x + s % w
+        s = (s * 1103515245 + 12345) & 0x7FFFFFFF
+        sy = y + s % (h // 2)
+        cv.set(sx, sy, (255, 255, 220))
+        if s % 3 == 0:
+            cv.set(sx + 1, sy, (255, 255, 220))
 
-    def ln(ax, ay, bx, by, col, th=2):
-        p0, p1 = P(ax, ay), P(bx, by)
-        cv.line(p0[0], p0[1], p1[0], p1[1], col, max(1, int(th * u + 0.5)))
 
-    def rc(ax, ay, w, h, col):
-        p0 = P(ax, ay)
-        cv.rect(p0[0], p0[1], max(1, int(w * u + 0.5)),
-                max(1, int(h * u + 0.5)), col)
+def _flame(cv, x, y, w, h):
+    # a stylised flame: orange triangle stack with a yellow core
+    cv.polygon([(x, y + h), (x + w // 2, y), (x + w, y + h)], (232, 98, 20))
+    cv.polygon([(x + w // 4, y + h), (x + w // 2, y + h // 3),
+                (x + 3 * w // 4, y + h)], (245, 196, 40))
 
-    def ro(ax, ay, w, h, col):
-        p0 = P(ax, ay)
-        cv.rect_outline(p0[0], p0[1], max(1, int(w * u + 0.5)),
-                        max(1, int(h * u + 0.5)), col, 1)
 
-    def ci(cx, cy, r, col, fill=True):
-        p = P(cx, cy)
-        cv.circle(p[0], p[1], max(1, int(r * u + 0.5)), col, fill)
+def _smoke(cv, x, y, r, color=(120, 120, 118)):
+    cv.circle(x, y, r, color)
+    cv.circle(x + r // 2, y - r // 2, r * 3 // 4, color)
+    cv.circle(x - r // 3, y - r // 2, r // 2, color)
 
-    def el(cx, cy, rx, ry, col, fill=True):
-        p = P(cx, cy)
-        cv.ellipse(p[0], p[1], max(1, int(rx * u + 0.5)),
-                   max(1, int(ry * u + 0.5)), col, fill)
 
-    def pg(pts, col, fill=True):
-        cv.poly([P(a, b) for a, b in pts], col, fill)
+def scene_gulf_strikes(cv, x, y, w, h):
+    # Night over the Gulf: dark sky, missile trails, base, explosions.
+    cv.fill(x, y, w, h, NAVY)
+    _stars(cv, x, y, w, h, 26, 7)
+    # missile trails: bright arcs falling to the base
+    for tx, ty, lx in ((x + w // 4, y + 8, 26), (x + w // 2, y + 4, 34),
+                       (x + 3 * w // 4, y + 10, 22)):
+        cv.line(tx, ty, tx - lx // 2, ty + 44, (255, 240, 180))
+        cv.line(tx, ty, tx - lx // 2, ty + 44, (255, 240, 180))
+        cv.circle(tx - lx // 2, ty + 44, 3, (255, 200, 60))
+    # base buildings on the ground
+    gy = y + h - 26
+    cv.fill(x, gy, w, 26, (10, 18, 38))
+    for bx, bw, bh in ((8, 34, 16), (52, 22, 22), (88, 40, 13),
+                       (140, 26, 19), (180, 34, 15), (226, 24, 21),
+                       (262, 30, 14)):
+        cv.fill(x + bx, gy - bh, bw, bh, (24, 38, 70))
+        for wy in range(gy - bh + 4, gy - 2, 7):
+            cv.fill(x + bx + 4, wy, 3, 3, (255, 220, 120))
+    # explosions over two buildings
+    _flame(cv, x + 56, gy - 34, 16, 16)
+    _flame(cv, x + 232, gy - 30, 14, 14)
+    _smoke(cv, x + 64, gy - 40, 8)
+    _smoke(cv, x + 240, gy - 36, 7)
 
-    if kind == "missile":
-        pg([(62, 8), (74, 22), (58, 30)], fg)                 # nose cone
-        pg([(58, 28), (74, 22), (66, 52), (50, 58)], fg)      # body
-        pg([(50, 58), (66, 52), (72, 66), (56, 72)], fg)      # fins
-        pg([(52, 70), (60, 88), (68, 70)], accent)            # flame
-        ln(20, 20, 34, 34, accent, 3)
-        ln(14, 44, 30, 44, accent, 3)
-        ln(22, 68, 36, 60, accent, 3)
-    elif kind == "van":
-        rc(14, 40, 48, 26, fg)
-        pg([(62, 40), (82, 48), (86, 66), (62, 66)], fg)      # cab
-        rc(68, 50, 12, 10, PAPER)
-        ci(28, 70, 8, INK)
-        ci(72, 70, 8, INK)
-        rc(32, 46, 6, 16, RED)
-        rc(27, 51, 16, 6, RED)
-    elif kind == "bulb":
-        ci(50, 38, 24, fg)
-        ci(50, 38, 24, fg, fill=False)
-        rc(42, 60, 16, 6, fg)
-        rc(44, 68, 12, 5, fg)
-        ln(26, 14, 74, 62, accent, 4)
-    elif kind == "shield":
-        pg([(50, 10), (82, 22), (82, 52), (50, 88), (18, 52), (18, 22)], fg)
-        pg([(50, 18), (74, 27), (74, 50), (50, 78), (26, 50), (26, 27)], PAPER)
-        ln(36, 46, 46, 58, RED, 4)
-        ln(46, 58, 66, 30, RED, 4)
-        for dx, dy in ((-14, -8), (14, -8), (0, 6)):
-            ci(50 + dx, 22 + dy, 2, fg)
-    elif kind == "cedar":
-        pg([(50, 12), (72, 38), (28, 38)], (46, 125, 50))
-        pg([(50, 28), (78, 56), (22, 56)], (46, 125, 50))
-        pg([(50, 46), (82, 74), (18, 74)], (46, 125, 50))
-        rc(46, 74, 8, 14, (93, 64, 55))
-    elif kind == "globe":
-        ci(50, 50, 36, fg, fill=False)
-        el(50, 50, 36, 14, fg, fill=False)
-        el(50, 50, 14, 36, fg, fill=False)
-        ln(14, 50, 86, 50, fg, 2)
-        pg([(62, 26), (78, 10), (84, 26)], (46, 125, 50))
-    elif kind == "ship":
-        pg([(16, 56), (84, 56), (76, 74), (24, 74)], fg)
-        rc(24, 40, 14, 16, accent)
-        rc(42, 36, 14, 20, fg)
-        rc(60, 42, 14, 14, accent)
-        pg([(30, 30), (36, 16), (42, 30)], (232, 122, 36))
-        pg([(52, 28), (58, 12), (64, 28)], (232, 122, 36))
-        ln(10, 82, 90, 82, fg, 2)
-        ln(16, 90, 84, 90, fg, 2)
-    elif kind == "passport":
-        rc(24, 14, 52, 72, fg)
-        rc(30, 20, 40, 60, PAPER)
-        ci(50, 40, 10, fg)
-        rc(36, 54, 28, 4, fg)
-        rc(36, 62, 20, 4, fg)
-        ln(70, 70, 88, 88, RED, 5)
-        ln(88, 70, 70, 88, RED, 5)
-    elif kind == "fence":
-        for bx in (18, 38, 58, 78):
-            rc(bx, 22, 5, 56, fg)
-        ln(12, 34, 88, 34, fg, 3)
-        ln(12, 64, 88, 64, fg, 3)
-        rc(34, 78, 32, 12, RED)
-        ln(34, 78, 66, 90, PAPER, 2)
-    elif kind == "crowd":
-        ci(30, 34, 10, fg)
-        ci(50, 26, 10, fg)
-        ci(70, 34, 10, fg)
-        pg([(20, 78), (30, 48), (40, 78)], fg)
-        pg([(40, 78), (50, 44), (60, 78)], fg)
-        pg([(60, 78), (70, 48), (80, 78)], fg)
-        rc(72, 12, 22, 14, RED)
-        ln(82, 26, 82, 48, fg, 2)
-    elif kind == "building":
-        rc(16, 34, 22, 48, fg)
-        rc(42, 20, 22, 62, fg)
-        rc(68, 44, 18, 38, fg)
-        for bx in (20, 28, 46, 54, 72):
-            rc(bx, 30, 5, 5, PAPER)
-        ln(42, 20, 52, 40, accent, 3)
-        ln(52, 40, 44, 58, accent, 3)
-        ln(44, 58, 56, 74, accent, 3)
-        pg([(72, 12), (78, 2), (84, 12)], (232, 122, 36))
-    elif kind == "mercury":
-        ci(50, 50, 34, (150, 135, 95))
-        ci(38, 38, 7, (120, 105, 70))
-        ci(60, 58, 9, (120, 105, 70))
-        ci(56, 32, 5, (120, 105, 70))
-        ci(40, 62, 4, (120, 105, 70))
-        rc(70, 12, 16, 8, fg)
-        rc(64, 20, 4, 12, fg)
-        rc(82, 20, 4, 12, fg)
-        ln(74, 8, 86, 2, accent, 2)
-    elif kind == "heli":
-        el(48, 52, 26, 14, fg)
-        pg([(70, 46), (90, 50), (90, 56), (70, 58)], fg)
-        ln(14, 34, 86, 34, fg, 3)
-        ln(40, 66, 34, 78, fg, 2)
-        ln(56, 66, 62, 78, fg, 2)
-        ln(30, 78, 66, 78, fg, 2)
-        ci(86, 52, 4, accent)
-    elif kind == "ballot":
-        rc(22, 44, 56, 40, fg)
-        rc(30, 52, 40, 24, PAPER)
-        ln(36, 64, 46, 72, RED, 3)
-        ln(46, 72, 64, 52, RED, 3)
-        rc(40, 18, 20, 30, PAPER)
-        ro(40, 18, 20, 30, fg)
-        ln(44, 30, 56, 30, fg, 2)
-    elif kind == "plane":
-        el(50, 50, 30, 9, fg)
-        pg([(34, 50), (58, 30), (66, 50)], fg)
-        pg([(44, 50), (62, 68), (70, 50)], fg)
-        pg([(74, 44), (88, 36), (88, 48)], fg)
-        ci(28, 48, 3, PAPER)
-    elif kind == "cyclone":
-        ci(50, 50, 30, fg, fill=False)
-        ci(50, 50, 20, fg, fill=False)
-        ci(50, 50, 10, fg, fill=False)
-        pg([(50, 50), (72, 34), (78, 52)], accent)
-        ln(30, 84, 26, 92, (31, 78, 121), 3)
-        ln(50, 84, 46, 92, (31, 78, 121), 3)
-        ln(70, 84, 66, 92, (31, 78, 121), 3)
-    elif kind == "seismo":
-        ln(10, 50, 24, 50, fg, 2)
-        ln(24, 50, 32, 26, accent, 3)
-        ln(32, 26, 40, 70, accent, 3)
-        ln(40, 70, 48, 38, accent, 3)
-        ln(48, 38, 56, 58, accent, 3)
-        ln(56, 58, 66, 50, accent, 3)
-        ln(66, 50, 90, 50, fg, 2)
-        ln(10, 78, 90, 78, fg, 2)
-    elif kind == "sub":
-        el(50, 48, 34, 12, fg)
-        rc(40, 30, 18, 12, fg)
-        ln(49, 30, 49, 20, fg, 3)
-        ln(20, 34, 30, 34, fg, 2)
-        ci(66, 46, 3, PAPER)
-        ci(58, 46, 3, PAPER)
-        ln(12, 74, 88, 74, (31, 78, 121), 2)
-        ln(20, 82, 80, 82, (31, 78, 121), 2)
-    elif kind == "bridge":
-        ln(10, 70, 90, 70, fg, 3)
-        rc(48, 24, 4, 46, fg)
-        for tx in (18, 28, 38, 62, 72, 82):
-            ln(50, 26, tx, 70, fg, 1)
-        pg([(44, 24), (52, 24), (50, 12)], accent)
-    elif kind == "mountain":
-        pg([(8, 82), (38, 30), (62, 82)], fg)
-        pg([(34, 82), (66, 16), (92, 82)], (90, 90, 85))
-        pg([(38, 30), (46, 42), (30, 42)], PAPER)
-        pg([(66, 16), (74, 30), (58, 30)], PAPER)
-        ln(14, 90, 28, 78, accent, 2)
-        ln(28, 78, 36, 88, accent, 2)
-        ln(36, 88, 46, 76, accent, 2)
-    elif kind == "cuffs":
-        ci(30, 50, 16, fg, fill=False)
-        ci(70, 50, 16, fg, fill=False)
-        ci(30, 50, 16, fg, fill=False)
-        ln(44, 44, 56, 44, fg, 3)
-        ln(44, 56, 56, 56, fg, 3)
-        ci(50, 50, 4, accent)
-    elif kind == "racecar":
-        pg([(14, 58), (22, 44), (52, 40), (76, 48), (86, 58), (86, 64),
-            (14, 64)], fg)
-        rc(30, 46, 16, 8, PAPER)
-        ci(30, 66, 8, INK)
-        ci(70, 66, 8, INK)
-        for i in range(4):
-            for j in range(2):
-                if (i + j) % 2 == 0:
-                    rc(62 + i * 6, 14 + j * 6, 6, 6, INK)
-        ln(62, 14, 62, 38, fg, 2)
-    elif kind == "hospital":
-        rc(20, 20, 60, 60, fg)
-        rc(44, 30, 12, 40, PAPER)
-        rc(30, 44, 40, 12, PAPER)
-        ln(20, 88, 80, 88, fg, 2)
-    elif kind == "spray":
-        rc(36, 34, 22, 48, fg)
-        rc(40, 24, 14, 10, fg)
-        ln(54, 26, 72, 20, fg, 3)
-        ci(76, 18, 2, (31, 78, 121))
-        ci(82, 26, 2, (31, 78, 121))
-        ci(78, 34, 2, (31, 78, 121))
-        ln(66, 40, 74, 60, (211, 178, 60), 2)
-        ln(70, 50, 80, 44, (211, 178, 60), 2)
-    elif kind == "boat":
-        pg([(18, 46), (78, 60), (72, 74), (26, 66)], fg)
-        ln(52, 52, 60, 22, fg, 3)
-        pg([(60, 22), (60, 48), (78, 48)], accent)
-        ln(10, 82, 90, 82, (31, 78, 121), 2)
-        ln(18, 90, 82, 90, (31, 78, 121), 2)
-    elif kind == "suitcase":
-        rc(24, 36, 52, 44, fg)
-        rc(38, 26, 24, 10, fg)
-        rc(48, 36, 4, 44, PAPER)
-        ci(34, 84, 4, INK)
-        ci(66, 84, 4, INK)
-        ln(76, 20, 88, 12, accent, 3)
-        pg([(88, 12), (80, 12), (86, 20)], accent)
-    elif kind == "football":
-        ci(50, 50, 32, fg, fill=False)
-        pg([(50, 38), (62, 47), (57, 62), (43, 62), (38, 47)], fg)
-        ln(50, 38, 50, 18, fg, 2)
-        ln(62, 47, 80, 40, fg, 2)
-        ln(57, 62, 70, 76, fg, 2)
-        ln(43, 62, 30, 76, fg, 2)
-        ln(38, 47, 20, 40, fg, 2)
-    elif kind == "bitcoin":
-        ci(50, 50, 34, (232, 160, 32))
-        draw_text(cv, P(41, 28)[0], P(41, 28)[1], "B", PAPER, "B",
-                  36 if s >= 60 else 24)
-    elif kind == "note":
-        el(38, 66, 12, 9, fg)
-        ln(48, 66, 48, 22, fg, 3)
-        pg([(48, 22), (72, 34), (48, 40)], fg)
-    elif kind == "tennis":
-        ci(36, 62, 24, (211, 178, 60))
-        ln(18, 48, 30, 72, PAPER, 2)
-        ln(54, 48, 42, 72, PAPER, 2)
-        el(72, 30, 12, 16, fg, fill=False)
-        ln(66, 44, 56, 58, fg, 3)
-    elif kind == "rugby":
-        el(50, 50, 34, 20, (120, 72, 30))
-        ln(38, 44, 62, 56, PAPER, 2)
-        ln(44, 40, 48, 46, PAPER, 2)
-        ln(52, 44, 56, 50, PAPER, 2)
-        ln(56, 50, 60, 56, PAPER, 2)
-    elif kind == "cricket":
-        pg([(30, 30), (52, 30), (52, 74), (30, 74)], (200, 170, 120))
-        rc(38, 74, 6, 16, fg)
-        ci(70, 60, 10, RED)
-        ln(66, 56, 74, 64, PAPER, 1)
-    elif kind == "rings":
-        ci(30, 36, 10, (0, 90, 160), fill=False)
-        ci(50, 36, 10, (20, 20, 20), fill=False)
-        ci(70, 36, 10, (200, 30, 30), fill=False)
-        ci(40, 52, 10, (220, 180, 0), fill=False)
-        ci(60, 52, 10, (0, 140, 60), fill=False)
-        pg([(46, 84), (54, 84), (50, 72)], (232, 122, 36))
-        rc(47, 84, 6, 8, fg)
-    elif kind == "doubles":
-        el(34, 34, 12, 16, fg, fill=False)
-        ln(28, 48, 18, 62, fg, 3)
-        el(66, 34, 12, 16, fg, fill=False)
-        ln(72, 48, 82, 62, fg, 3)
-        ci(50, 62, 8, (211, 178, 60))
-    else:  # fallback: a simple star
-        pg([(50, 14), (60, 40), (88, 40), (66, 56), (74, 84), (50, 66),
-            (26, 84), (34, 56), (12, 40), (40, 40)], accent)
 
-# ------------------------------------------------------------------ stories
-# (number, region, headline, body, source, pictogram, map u, map v)
-# Map positions are fractions of the map area; None means "not pinned".
-# All 34 stories happened, or were first reported, on Sunday 22 Nov 2026
-# (several broke late on Saturday 21 Nov and were reported on Sunday).
-STORIES = [
-    (1, "MIDDLE EAST", "IRAN STRIKES US BASES IN THE GULF",
-     "Missiles and drones hit US positions in Bahrain, Kuwait and Jordan "
-     "late on Saturday. Washington says almost all were intercepted; a "
-     "civilian site in Bahrain caught fire.",
-     "Reuters - Al Jazeera - ANI", "missile", 0.650, 0.390),
-    (2, "MIDDLE EAST", "AID VAN HIT IN GAZA CITY",
-     "A drone strike killed three in a van carrying food-aid papers.",
-     "Reuters - AFP - Al Jazeera", "van", 0.600, 0.350),
-    (3, "MIDDLE EAST", "IRAN STARTS RATIONING POWER",
-     "Rolling cuts of up to two hours a day begin on Sunday as war damage "
-     "and fuel shortages hit the grid, the national electricity company says.",
-     "RFE/RL - Reuters", "bulb", None, None),
-    (4, "MIDDLE EAST", "JORDAN DOWNS FIVE MISSILES",
-     "Five missiles were shot down near Azraq as Iran's wave passed over "
-     "the region. No casualties or material damage were reported.",
-     "Al Jazeera - Philippine Daily Post", "shield", None, None),
-    (5, "MIDDLE EAST", "LEBANON MARKS INDEPENDENCE DAY",
-     "Lebanon marks 83 years since independence from France on 22 "
-     "November 1943.",
-     "Bestie10", "cedar", None, None),
-    (6, "EUROPE", "COP31 NEARS A DEAL IN ANTALYA",
-     "A new package text was put to nearly 200 nations late on Saturday. "
-     "Objections are due by 03:00 GMT; an approval session is set for "
-     "06:00 GMT on Sunday.",
-     "Reuters", "globe", 0.575, 0.270),
-    (7, "EUROPE", "RUSSIAN SHIP BURNING OFF FINLAND",
-     "Drones hit the cargo ship Sparta II; its 16 crew took to lifeboats.",
-     "CNN - Reuters - ISW", "ship", 0.575, 0.115),
-    (8, "EUROPE", "DENMARK EXPELS RUSSIAN ATTACHE",
-     "Copenhagen will expel Russia's defence attache after accusing Moscow "
-     "of a foiled plot to kill rapper Kyivstoner at a concert near the capital.",
-     "WSJ - CNN - Al Jazeera", "passport", None, None),
-    (9, "EUROPE", "ESTONIA TO SHUT ITS RUSSIA BORDER",
-     "All five road crossings with Russia will close from 1 December for "
-     "six months, after an arson attempt Estonia blames on Russian "
-     "military intelligence.",
-     "Reuters - Zot News", "fence", None, None),
-    (10, "EUROPE", "FRANCE MARCHES FOR A SIXTH SATURDAY",
-     "82,500 marched over living costs, down from 106,000 a week earlier.",
-     "Reuters", "crowd", 0.515, 0.230),
-    (11, "EUROPE", "DOUBLE-TAP STRIKE HITS KRYVYI RIH",
-     "A Russian ballistic-missile strike on Zelenskyy's home city killed "
-     "two, including a seven-year-old boy, and wounded 60. A second wave "
-     "hit rescuers.",
-     "AP - NY Post - Ukrinform", "building", None, None),
-    (12, "EUROPE", "BEPICOLOMBO REACHES MERCURY",
-     "After eight years in space, the ESA-JAXA mission entered orbit around "
-     "Mercury, only the second mission ever to do so. Science begins in "
-     "April 2027.",
-     "ESA - Nature - Sky & Telescope", "mercury", None, None),
-    (13, "EUROPE", "RUSSIAN HELICOPTER IN FINNISH SKIES",
-     "Finland says a Russian helicopter is suspected of violating its "
-     "airspace near Loviisa on the same day the Sparta II was hit.",
-     "ISW - CNN", "heli", None, None),
-    (14, "ASIA-PACIFIC", "HONG KONG VOTES FOR ITS ELECTION BODY",
-     "856 candidates contest 723 seats on the Election Committee.",
-     "China Daily Asia - World Today Journal", "ballot", 0.817, 0.405),
-    (15, "ASIA-PACIFIC", "NEPAL'S PM ARRIVES IN DELHI",
-     "Balendra Shah begins a two-day state visit, his first trip abroad "
-     "since taking office in March. Talks with Narendra Modi are set for Monday.",
-     "IANS - Radio Nepal - MEA", "plane", None, None),
-    (16, "ASIA-PACIFIC", "CYCLONE AKVAN GROUNDS FLIGHTS",
-     "The storm's remnants forced 14 flights to be cancelled at Ranchi "
-     "airport as visibility fell to about 1,000 metres. The cyclone has "
-     "weakened to a depression.",
-     "PTI - Jagran Josh", "cyclone", None, None),
-    (17, "ASIA-PACIFIC", "DEEP QUAKE RATTLES SULU SEA",
-     "A magnitude 5.9 earthquake struck 586 km deep in the Sulu Sea on "
-     "Saturday evening. No damage was reported from the very deep tremor.",
-     "BMKG - VolcanoDiscovery", "seismo", None, None),
-    (18, "ASIA-PACIFIC", "AUSTRALIA REJECTS US REPORT ON AUKUS",
-     "Richard Marles criticised a US report on the submarine pact.",
-     "Reuters", "sub", 0.869, 0.769),
-    (19, "ASIA-PACIFIC", "MODI OPENS NITISH SETU BRIDGE",
-     "The six-lane cable-stayed bridge over the Ganga in Bihar, worth "
-     "Rs 4,280 crore, will cut the Patna-Vaishali trip to about 20 minutes.",
-     "PIB - Jagran - Zee News", "bridge", None, None),
-    (20, "THE AMERICAS", "PERU SHAKEN BY STRONG QUAKE",
-     "A magnitude 6.7 quake - first read as high as 6.9 - struck near "
-     "Junin on Friday night, sending Lima residents into the streets. "
-     "No deaths; 128 homes damaged, eight people hurt.",
-     "IGP - USGS - The Hindu BusinessLine", "mountain", 0.291, 0.663),
-    (21, "THE AMERICAS", "MEXICO CAPTURES 'EL CHAPO ISIDRO'",
-     "Special forces seized cartel boss Isidro Meza Flores in Sinaloa.",
-     "Reuters - CNN - US DOJ", "cuffs", 0.199, 0.380),
-    (22, "THE AMERICAS", "VERSTAPPEN INHERITS VEGAS POLE",
-     "Kimi Antonelli was fastest in qualifying, but a five-place grid "
-     "penalty for an engine change hands pole to Max Verstappen for "
-     "Saturday's race.",
-     "FIA - Formula 1 - AP", "racecar", None, None),
-    (23, "THE AMERICAS", "BOLSONARO TAKEN TO INTENSIVE CARE",
-     "Brazil's ex-president, 71, is in intensive care in Brasilia.",
-     "Reuters - AFP - The Times", "hospital", 0.367, 0.698),
-    (24, "THE AMERICAS", "ROUNDUP DEAL WORTH $7.25BN APPROVED",
-     "A Missouri judge approved Bayer's nationwide settlement over claims "
-     "the weedkiller caused cancer. Payouts run from $10,000 to $165,000.",
-     "AP - NPR - Agri-Pulse", "spray", None, None),
-    (25, "AFRICA", "BOAT CAPSIZES IN NIGERIA, 24 DEAD",
-     "A boat carrying mourners sank in Bayelsa; 24 bodies were recovered.",
-     "AP - NEMA - Radio Nigeria", "boat", 0.518, 0.540),
-    (26, "AFRICA", "25 DEPORTEES ARRIVE IN LIBERIA",
-     "Twenty-five migrants deported from the United States arrived in "
-     "Liberia, officials said.",
-     "AFP", "suitcase", None, None),
-    (27, "AFRICA", "GHANA FACE MOROCCO IN HISTORIC FINAL",
-     "Ghana beat holders Turkiye 4-3 on penalties and Morocco beat Brazil "
-     "2-1 to set up the first all-African Amputee Football World Cup "
-     "final, on Sunday in Mexico.",
-     "Ghana Guardian - Ghana SoccerNet", "football", None, None),
-    (28, "MARKETS & TECH", "BITCOIN CLAWS BACK $60,000",
-     "Bitcoin fell to $55,130, then bounced 9% to about $60,300.",
-     "Reuters - CoinDesk", "bitcoin", 0.294, 0.264),
-    (29, "MARKETS & TECH", "TIKTOK ROLLS OUT DEEPFAKE TOOL",
-     "TikTok launched a likeness-detection tool for politicians and public "
-     "figures, plus a public checker for AI-made media, ahead of European "
-     "elections in 2027.",
-     "AFP - CNA - Asia Daily", "note", None, None),
-    (30, "SPORT", "ENGLAND ROUT THE ALL BLACKS 37-12",
-     "Five tries gave England a record 25-point win over New Zealand.",
-     "Reuters - AP - RFU", "rugby", 0.485, 0.165),
-    (31, "SPORT", "ZVEREV MEETS ALCARAZ FOR THE TITLE",
-     "World No. 1 Zverev, yet to drop a set in Turin, faces Alcaraz in the "
-     "ATP Finals title match on Sunday evening. Alcaraz is chasing his "
-     "first crown.",
-     "ATP Tour - TennisNow", "tennis", None, None),
-    (32, "SPORT", "PANT HITS 128 AS INDIA PILE UP 629-6",
-     "Rishabh Pant's ninth Test hundred powered India to their highest "
-     "Test total in New Zealand, a lead of 261 on day four in Wellington.",
-     "Reuters - AP - IANS", "cricket", None, None),
-    (33, "SPORT", "MELBOURNE MARKS 70 YEARS SINCE '56",
-     "Surviving Olympians gather at the MCG for the 70th anniversary of "
-     "the 1956 Games. Swimmer Jon Henricks, Australia's first swimming "
-     "gold medallist there, died aged 91.",
-     "AAP - Australian Olympic Team", "rings", None, None),
-    (34, "SPORT", "DOUBLES CROWN DECIDED IN TURIN",
-     "Arevalo and Pavic meet Arribage and Olivetti in the ATP Finals "
-     "doubles final on Sunday afternoon, before the singles title match.",
-     "Tennis Tour Calendar - ATP Tour", "doubles", None, None),
+def scene_cop31(cv, x, y, w, h):
+    # Conference hall: long table, delegates, globe, thermometer, clock.
+    cv.fill(x, y, w, h, (233, 228, 210))
+    # back wall and flags
+    for i, col in enumerate(((31, 78, 121), (178, 57, 46), (46, 125, 50),
+                             (211, 108, 24), (106, 76, 147))):
+        fx = x + 14 + i * 52
+        cv.fill(fx, y + 8, 30, 18, col)
+        cv.vline(fx + 15, y + 8, 30, INK)
+    # globe on a stand, left
+    gx, gy = x + 44, y + 46
+    cv.circle(gx, gy, 20, (52, 120, 170))
+    cv.ellipse(gx - 6, gy - 4, 12, 7, (86, 170, 90))
+    cv.ellipse(gx + 4, gy + 8, 9, 5, (86, 170, 90))
+    cv.fill(gx - 2, gy + 20, 4, 10, INK)
+    cv.fill(gx - 12, gy + 30, 24, 3, INK)
+    # thermometer, right of the globe
+    tx = x + 96
+    cv.fill(tx, y + 30, 8, 34, (255, 255, 255))
+    cv.rect(tx, y + 30, 8, 34, INK)
+    cv.fill(tx + 1, y + 48, 6, 15, RED)
+    cv.circle(tx + 4, y + 66, 7, RED)
+    # clock on the wall
+    cx, cy = x + w - 46, y + 40
+    cv.circle(cx, cy, 16, (255, 255, 255))
+    cv.circle(cx, cy, 16, INK)
+    cv.line(cx, cy, cx, cy - 10, INK)
+    cv.line(cx, cy, cx + 8, cy + 3, INK)
+    # long table with delegates
+    ty = y + h - 34
+    cv.fill(x + 10, ty, w - 20, 8, (120, 72, 40))
+    cv.fill(x + 10, ty + 8, w - 20, 22, (88, 52, 28))
+    for i in range(7):
+        dx = x + 26 + i * 40
+        cv.circle(dx, ty - 12, 7, (222, 184, 150))
+        cv.polygon([(dx - 10, ty - 4), (dx, ty - 16), (dx + 10, ty - 4)],
+                   ((31, 78, 121), (178, 57, 46), (46, 125, 50),
+                    (211, 108, 24), (106, 76, 147), (90, 90, 90),
+                    (31, 78, 121))[i])
+    # "NEW TEXT" document on the table
+    cv.fill(x + w - 66, ty - 22, 44, 16, (255, 255, 255))
+    cv.rect(x + w - 66, ty - 22, 44, 16, INK)
+    cv.hline(x + w - 60, ty - 16, 32, INK)
+    cv.hline(x + w - 60, ty - 11, 32, GREY)
+
+
+def scene_barrage(cv, x, y, w, h):
+    # Night city under a drone barrage: skyline, trails, fires, river.
+    cv.fill(x, y, w, h, NAVY)
+    _stars(cv, x, y, w, h, 22, 21)
+    # drone trails: dotted diagonals with a bright head
+    for sx, sy, ex, ey in ((x + 30, y + 6, x + 90, y + 66),
+                           (x + 120, y + 2, x + 170, y + 58),
+                           (x + 210, y + 8, x + 250, y + 62),
+                           (x + 260, y + 4, x + 300, y + 54)):
+        steps = 7
+        for i in range(steps):
+            px = sx + (ex - sx) * i // steps
+            py = sy + (ey - sy) * i // steps
+            cv.circle(px, py, 2, (255, 240, 180))
+        cv.circle(ex, ey, 3, (255, 200, 60))
+    # skyline
+    gy = y + h - 30
+    for bx, bw, bh in ((6, 30, 34), (42, 22, 48), (70, 34, 28),
+                       (110, 26, 52), (142, 30, 36), (178, 24, 46),
+                       (208, 34, 30), (248, 28, 44), (282, 30, 32)):
+        cv.fill(x + bx, gy - bh, bw, bh, (12, 20, 44))
+        for wy in range(gy - bh + 5, gy - 3, 9):
+            for wx in range(4, bw - 4, 9):
+                cv.fill(x + bx + wx, wy, 3, 4, (255, 220, 120))
+    # fires on two buildings (kept inside the scene box)
+    _flame(cv, x + 116, gy - 58, 14, 14)
+    _flame(cv, x + 254, gy - 52, 12, 12)
+    # river with three bridges at the bottom
+    cv.fill(x, gy, w, 30, (40, 90, 140))
+    for bx in (60, 150, 240):
+        cv.fill(x + bx, gy + 8, 46, 4, (200, 200, 200))
+        cv.fill(x + bx + 4, gy + 12, 4, 10, (200, 200, 200))
+        cv.fill(x + bx + 38, gy + 12, 4, 10, (200, 200, 200))
+
+
+def scene_tankers(cv, x, y, w, h):
+    # Two tankers in the Strait of Hormuz; one burning, one listing.
+    cv.fill(x, y, w, h, SKY)
+    cv.circle(x + w - 26, y + 16, 12, (245, 214, 110))
+    # coastline top right
+    cv.polygon([(x + w, y), (x + w - 70, y), (x + w - 40, y + 22),
+                (x + w, y + 26)], (222, 209, 168))
+    # sea
+    sy = y + h // 2
+    cv.fill(x, sy, w, h - h // 2, (52, 120, 170))
+    for wy in range(sy + 8, y + h - 4, 12):
+        cv.hline(x + 6, wy, w - 12, (120, 180, 210))
+    # tanker one (left), stern hit, smoke
+    tx, ty = x + 12, sy + 12
+    cv.polygon([(tx, ty + 18), (tx + 78, ty + 18), (tx + 70, ty),
+                (tx + 8, ty)], (30, 30, 34))
+    cv.fill(tx + 52, ty - 12, 14, 12, (200, 200, 200))
+    cv.fill(tx + 56, ty - 16, 6, 4, RED)
+    _flame(cv, tx + 4, ty - 12, 14, 12)
+    _smoke(cv, tx + 10, ty - 20, 7)
+    # tanker two (right), engine-room fire
+    tx2, ty2 = x + w - 92, sy + 12
+    cv.polygon([(tx2, ty2 + 16), (tx2 + 80, ty2 + 16), (tx2 + 72, ty2),
+                (tx2 + 8, ty2)], (44, 44, 48))
+    cv.fill(tx2 + 14, ty2 - 10, 12, 10, (200, 200, 200))
+    _flame(cv, tx2 + 52, ty2 - 10, 16, 12)
+    _smoke(cv, tx2 + 60, ty2 - 18, 8)
+    # dashed shipping lane
+    for dx in range(0, w, 16):
+        cv.fill(x + dx, sy - 6, 9, 2, (255, 255, 255))
+
+
+def scene_sparta(cv, x, y, w, h):
+    # Sanctioned cargo ship burning in the Gulf of Finland.
+    cv.fill(x, y, w, h, (178, 205, 220))
+    cv.circle(x + 24, y + 14, 10, (245, 214, 110))
+    # Finnish coast, top right, with a lighthouse
+    cv.polygon([(x + w, y), (x + w - 56, y), (x + w - 34, y + 20),
+                (x + w, y + 24)], (222, 209, 168))
+    cv.fill(x + w - 30, y + 2, 6, 20, (255, 255, 255))
+    cv.fill(x + w - 32, y, 10, 4, RED)
+    # sea
+    sy = y + h // 2 + 4
+    cv.fill(x, sy, w, h - h // 2 - 4, (52, 120, 170))
+    for wy in range(sy + 8, y + h - 4, 12):
+        cv.hline(x + 6, wy, w - 12, (120, 180, 210))
+    # cargo ship, fire amidships (kept inside the scene box)
+    sx, syy = x + 18, sy + 8
+    cv.polygon([(sx, syy + 16), (sx + 120, syy + 16), (sx + 110, syy),
+                (sx + 10, syy)], (40, 40, 44))
+    cv.fill(sx + 16, syy - 12, 22, 12, (178, 57, 46))
+    cv.fill(sx + 44, syy - 12, 22, 12, (210, 180, 90))
+    cv.fill(sx + 72, syy - 12, 22, 12, (120, 120, 120))
+    _flame(cv, sx + 52, syy - 16, 18, 16)
+    _smoke(cv, sx + 62, syy - 26, 9)
+    _smoke(cv, sx + 74, syy - 34, 7)
+    # lifeboat with crew, inside the scene box
+    cv.ellipse(x + w - 46, sy + 20, 16, 5, (245, 160, 40))
+    cv.circle(x + w - 52, sy + 14, 3, (222, 184, 150))
+    cv.circle(x + w - 40, sy + 14, 3, (222, 184, 150))
+
+
+def scene_quake(cv, x, y, w, h):
+    # Andes mountains, a seismograph trace, houses shaken.
+    cv.fill(x, y, w, h, (238, 226, 198))
+    cv.circle(x + w - 24, y + 14, 11, (245, 214, 110))
+    # mountains
+    cv.polygon([(x, y + h), (x + 44, y + 14), (x + 88, y + h)],
+               (120, 130, 140))
+    cv.polygon([(x + 8, y + 40), (x + 44, y + 14), (x + 76, y + 44)],
+               (250, 250, 250))
+    cv.polygon([(x + 70, y + h), (x + 130, y + 8), (x + 190, y + h)],
+               (96, 108, 120))
+    cv.polygon([(x + 104, y + 34), (x + 130, y + 8), (x + 154, y + 36)],
+               (250, 250, 250))
+    # seismograph strip
+    sy = y + h - 44
+    cv.fill(x + 8, sy, w - 16, 26, (255, 255, 255))
+    cv.rect(x + 8, sy, w - 16, 26, INK)
+    pts = []
+    for i in range(w - 16):
+        amp = 2
+        if 60 < i < 130:
+            amp = 2 + int(9 * abs(math.sin(i * 0.55)))
+        pts.append((x + 8 + i, sy + 13 + (amp if i % 2 else -amp)))
+    for (px0, py0), (px1, py1) in zip(pts, pts[1:]):
+        cv.line(px0, py0, px1, py1, RED)
+    # two houses, one tilted
+    hx, hy = x + 16, y + h - 58
+    cv.polygon([(hx, hy), (hx + 12, hy - 10), (hx + 24, hy)], (178, 57, 46))
+    cv.fill(hx + 2, hy, 20, 12, (240, 230, 200))
+    hx2 = x + w - 44
+    cv.polygon([(hx2, hy + 2), (hx2 + 12, hy - 8), (hx2 + 24, hy + 2)],
+               (178, 57, 46))
+    cv.fill(hx2 + 2, hy + 2, 20, 12, (240, 230, 200))
+
+
+def scene_gaza_van(cv, x, y, w, h):
+    # A street in Gaza City: white van, smoke column, buildings.
+    # All drawing stays inside the (x, y, w, h) box.
+    cv.fill(x, y, w, h, (232, 222, 198))
+    street = y + h - 14
+    # buildings behind, sitting on the street
+    for bx, bw, bh, col in ((4, 34, 22, (190, 175, 150)),
+                            (44, 28, 30, (176, 160, 134)),
+                            (150, 36, 24, (190, 175, 150))):
+        top = max(y + 4, street - bh)
+        cv.fill(x + bx, top, bw, street - top, col)
+        for wy in range(top + 5, street - 2, 10):
+            cv.fill(x + bx + 6, wy, 6, 6, (90, 80, 66))
+    # street
+    cv.fill(x, street, w, 14, (120, 112, 100))
+    cv.hline(x, street, w, (255, 255, 255))
+    # white van
+    vx, vy = x + 52, street - 14
+    cv.fill(vx, vy, 62, 14, (245, 245, 240))
+    cv.rect(vx, vy, 62, 14, INK)
+    cv.polygon([(vx + 46, vy), (vx + 62, vy + 6), (vx + 62, vy + 14),
+                (vx + 46, vy + 14)], (210, 225, 235))
+    cv.circle(vx + 14, vy + 14, 3, INK)
+    cv.circle(vx + 48, vy + 14, 3, INK)
+    # smoke column above the van, inside the box
+    _smoke(cv, vx + 30, vy - 8, 6, (90, 90, 88))
+    _smoke(cv, vx + 36, vy - 16, 5, (110, 110, 108))
+
+
+def scene_basra(cv, x, y, w, h):
+    # Hartha power station: cooling towers, flames, black smoke, houses.
+    # All drawing stays inside the (x, y, w, h) box.
+    cv.fill(x, y, w, h, (226, 210, 180))
+    ground = y + h - 12
+    # cooling towers
+    for tx, tw in ((14, 34), (56, 30)):
+        top = y + 12
+        cv.polygon([(x + tx, ground), (x + tx + 5, top),
+                    (x + tx + tw - 5, top), (x + tx + tw, ground)],
+                   (200, 196, 186))
+        cv.fill(x + tx + 2, top, tw - 4, 4, (160, 156, 146))
+    # turbine hall with flames
+    hx = x + 100
+    hall_top = ground - 20
+    cv.fill(hx, hall_top, 66, 20, (150, 140, 120))
+    _flame(cv, hx + 10, hall_top - 10, 14, 10)
+    _flame(cv, hx + 36, hall_top - 8, 12, 8)
+    _smoke(cv, hx + 18, hall_top - 18, 7, (60, 60, 58))
+    _smoke(cv, hx + 44, hall_top - 14, 6, (80, 80, 78))
+    # small houses in front
+    for bx in (10, 44, 140):
+        cv.polygon([(x + bx, ground), (x + bx + 10, ground - 10),
+                    (x + bx + 20, ground)], (178, 57, 46))
+        cv.fill(x + bx + 2, ground, 16, 12, (240, 230, 200))
+
+
+def scene_rationing(cv, x, y, w, h):
+    # A pylon, a clock showing two hours, dark houses, one lit window.
+    cv.fill(x, y, w, h, (24, 36, 62))
+    _stars(cv, x, y, w, h, 10, 31)
+    # pylon
+    px = x + w // 2
+    cv.polygon([(px - 22, y + h - 8), (px - 6, y + 18), (px + 6, y + 18),
+                (px + 22, y + h - 8)], (140, 140, 138))
+    cv.line(px - 26, y + 26, px + 26, y + 26, (140, 140, 138))
+    cv.line(px - 20, y + 40, px + 20, y + 40, (140, 140, 138))
+    # wires to the houses
+    cv.line(x + 8, y + h - 34, px - 20, y + 30, (140, 140, 138))
+    cv.line(px + 20, y + 30, x + w - 8, y + h - 34, (140, 140, 138))
+    # dark houses
+    for bx in (8, w - 48):
+        cv.fill(x + bx, y + h - 30, 40, 30, (12, 18, 36))
+        cv.polygon([(x + bx, y + h - 30), (x + bx + 20, y + h - 44),
+                    (x + bx + 40, y + h - 30)], (10, 14, 30))
+    # one lit window
+    cv.fill(x + 20, y + h - 22, 8, 8, (255, 220, 120))
+    # clock showing 2 hours
+    cx, cy = x + w - 30, y + 20
+    cv.circle(cx, cy, 13, (255, 255, 255))
+    cv.circle(cx, cy, 13, INK)
+    cv.line(cx, cy, cx, cy - 8, INK)
+    cv.line(cx, cy, cx + 6, cy + 4, INK)
+
+
+def scene_rutte(cv, x, y, w, h):
+    # NATO compass star over the Warsaw skyline, Polish flag.
+    cv.fill(x, y, w, h, SKY)
+    # Warsaw skyline
+    gy = y + h - 26
+    for bx, bw, bh in ((6, 26, 30), (38, 20, 44), (64, 30, 24),
+                       (100, 22, 40), (128, 26, 28), (160, 24, 36)):
+        cv.fill(x + bx, gy - bh, bw, bh, (90, 100, 118))
+        for wy in range(gy - bh + 5, gy - 3, 9):
+            cv.fill(x + bx + 4, wy, 3, 3, (255, 220, 120))
+    # NATO compass star
+    cx, cy = x + w // 2, y + 34
+    cv.circle(cx, cy, 26, (28, 52, 110))
+    for ang in range(0, 360, 90):
+        a = math.radians(ang)
+        tip = (cx + int(22 * math.cos(a)), cy + int(22 * math.sin(a)))
+        side = (cx + int(6 * math.cos(a + 1.57)),
+                cy + int(6 * math.sin(a + 1.57)))
+        side2 = (cx + int(6 * math.cos(a - 1.57)),
+                 cy + int(6 * math.sin(a - 1.57)))
+        cv.polygon([tip, side, (cx, cy)], (255, 255, 255))
+        cv.polygon([tip, side2, (cx, cy)], (200, 210, 230))
+    cv.circle(cx, cy, 5, (255, 255, 255))
+    # Polish flag on a pole
+    fx = x + 16
+    cv.vline(fx, y + 12, 44, INK)
+    cv.fill(fx, y + 12, 30, 9, (255, 255, 255))
+    cv.fill(fx, y + 21, 30, 9, (220, 20, 60))
+
+
+def scene_sudan(cv, x, y, w, h):
+    # Desert road under a hard sun; a UN-blue flag, a drone overhead.
+    cv.fill(x, y, w, h, (238, 220, 170))
+    cv.circle(x + w - 26, y + 16, 13, (245, 200, 80))
+    # dunes
+    cv.polygon([(x, y + h), (x + 60, y + h - 34), (x + 130, y + h)],
+               (214, 188, 130))
+    cv.polygon([(x + 90, y + h), (x + 150, y + h - 26), (x + w, y + h)],
+               (200, 172, 112))
+    # road with dashed centre
+    cv.polygon([(x + w // 2 - 12, y + h), (x + w // 2 - 4, y + 34),
+                (x + w // 2 + 4, y + 34), (x + w // 2 + 12, y + h)],
+               (120, 110, 96))
+    for i in range(4):
+        yy = y + 44 + i * 14
+        cv.fill(x + w // 2 - 1, yy, 2, 7, (255, 255, 255))
+    # UN flag on a pole, inside the scene box
+    fx = x + 16
+    cv.vline(fx, y + 30, 28, INK)
+    cv.fill(fx, y + 30, 30, 18, (60, 110, 200))
+    cv.circle(fx + 15, y + 39, 5, (255, 255, 255))
+    # small drone silhouette
+    dx, dy = x + w - 52, y + 44
+    cv.fill(dx - 12, dy, 24, 3, INK)
+    cv.circle(dx - 12, dy, 4, INK)
+    cv.circle(dx + 12, dy, 4, INK)
+    cv.fill(dx - 3, dy, 6, 8, INK)
+
+
+def scene_eu_indonesia(cv, x, y, w, h):
+    # Two flags, a handshake and a signed document.
+    cv.fill(x, y, w, h, (238, 232, 214))
+    # EU flag
+    ex, ey = x + 12, y + 12
+    cv.fill(ex, ey, 52, 30, (0, 51, 153))
+    for i in range(12):
+        a = math.radians(i * 30 - 90)
+        cv.circle(ex + 26 + int(11 * math.cos(a)),
+                  ey + 15 + int(11 * math.sin(a)), 1, (255, 209, 0))
+    # Indonesian flag
+    ix, iy = x + w - 64, y + 12
+    cv.fill(ix, iy, 52, 15, (220, 20, 60))
+    cv.fill(ix, iy + 15, 52, 15, (255, 255, 255))
+    cv.rect(ix, iy, 52, 30, INK)
+    # handshake: two sleeves and clasped hands
+    hx, hy = x + w // 2, y + h - 34
+    cv.polygon([(hx - 52, hy - 12), (hx - 12, hy - 2), (hx - 12, hy + 10),
+                (hx - 52, hy + 10)], (31, 78, 121))
+    cv.polygon([(hx + 52, hy - 12), (hx + 12, hy - 2), (hx + 12, hy + 10),
+                (hx + 52, hy + 10)], (178, 57, 46))
+    cv.circle(hx - 6, hy + 2, 7, (222, 184, 150))
+    cv.circle(hx + 6, hy + 2, 7, (222, 184, 150))
+    # signed document below
+    cv.fill(x + w // 2 - 34, y + h - 22, 68, 16, (255, 255, 255))
+    cv.rect(x + w // 2 - 34, y + h - 22, 68, 16, INK)
+    cv.hline(x + w // 2 - 28, y + h - 16, 40, GREY)
+    cv.circle(x + w // 2 + 22, y + h - 12, 5, RED)
+
+
+def scene_belgium(cv, x, y, w, h):
+    # An airport with a grounded plane, tower and a strike placard.
+    cv.fill(x, y, w, h, (206, 220, 232))
+    # control tower
+    tx = x + 16
+    cv.fill(tx, y + 10, 10, 44, (120, 120, 118))
+    cv.fill(tx - 4, y + 4, 18, 10, (60, 90, 140))
+    # grounded plane
+    px, py = x + 52, y + h - 40
+    cv.ellipse(px + 40, py, 42, 8, (255, 255, 255))
+    cv.polygon([(px + 78, py - 2), (px + 92, py - 12), (px + 92, py + 2)],
+               (200, 30, 40))
+    cv.fill(px + 30, py - 14, 26, 4, (200, 200, 200))
+    cv.fill(px + 44, py + 6, 4, 10, INK)
+    cv.fill(px + 66, py + 6, 4, 10, INK)
+    # runway
+    cv.fill(x, y + h - 14, w, 6, (80, 80, 78))
+    for dx in range(0, w, 18):
+        cv.fill(x + dx, y + h - 12, 10, 2, (255, 255, 255))
+    # strike placard
+    cv.fill(x + w - 46, y + 12, 34, 24, (255, 255, 255))
+    cv.rect(x + w - 46, y + 12, 34, 24, RED)
+    cv.fill(x + w - 42, y + 16, 26, 3, RED)
+    cv.fill(x + w - 42, y + 22, 18, 3, RED)
+    cv.fill(x + w - 42, y + 28, 22, 3, RED)
+
+
+# -------------------------------------------------------------------- data
+LEADS = [
+    dict(n=1, place="GULF", topic="IRAN WAR",
+         head="Iran strikes US bases in the Gulf",
+         body=("Iran fired missiles and drones at US bases in Bahrain, "
+               "Kuwait and Jordan late on Saturday. Almost all were "
+               "intercepted."),
+         src="Reuters · Al Jazeera", tag="CONFIRMED",
+         scene=scene_gulf_strikes),
+    dict(n=2, place="ANTALYA", topic="CLIMATE",
+         head="COP31 nears a deal in Antalya",
+         body=("A new package text went to nearly 200 nations late on "
+               "Saturday. Objections due 03:00 GMT; approval set for "
+               "06:00 GMT."),
+         src="Reuters", tag="CONFIRMED",
+         scene=scene_cop31),
+    dict(n=3, place="KYIV", topic="UKRAINE WAR",
+         head="Russia fires 400 drones and 110 missiles",
+         body=("Over 400 drones and 110 missiles hit Ukraine overnight into "
+               "Friday — one of the war's largest attacks. Nine were "
+               "killed."),
+         src="Reuters · Kyiv Independent", tag="CONFIRMED",
+         scene=scene_barrage),
 ]
 
-# One-line versions of the stories that only appear in the numbered list.
-ALSO = {
-    3: "Iran begins power rationing from Sunday, with rolling cuts of up to two hours a day.",
-    4: "Jordan shot down five missiles near Azraq; no casualties or damage were reported.",
-    5: "Lebanon marks its Independence Day, 83 years after independence from France.",
-    8: "Denmark expels Russia's defence attache over a foiled plot to kill rapper Kyivstoner.",
-    9: "Estonia will shut all five road crossings with Russia from 1 December, for six months.",
-    11: "A Russian double-tap strike on Kryvyi Rih killed two, including a seven-year-old boy.",
-    12: "BepiColombo entered orbit around Mercury, only the second mission ever to do so.",
-    13: "A Russian helicopter is suspected of violating Finnish airspace near Loviisa.",
-    15: "Nepal's PM Balendra Shah arrives in Delhi on his first trip abroad since taking office.",
-    16: "Cyclone Akvan's remnants forced 14 flights to be cancelled at Ranchi airport.",
-    17: "A magnitude 5.9 quake struck the Sulu Sea, 586 km deep; no damage was reported.",
-    19: "Modi opens Nitish Setu, a six-lane bridge over the Ganga in Bihar, worth Rs 4,280 crore.",
-    22: "Verstappen inherits pole in Las Vegas after fastest man Antonelli takes a penalty.",
-    24: "A Missouri judge approves a $7.25bn Roundup settlement covering current and future claims.",
-    26: "Twenty-five migrants deported from the US arrived in Liberia.",
-    27: "Ghana face Morocco in the first all-African Amputee Football World Cup final, on Sunday.",
-    29: "TikTok rolls out a deepfake-spotting tool for politicians and public figures.",
-    31: "Zverev meets Alcaraz in the ATP Finals title match in Turin on Sunday evening.",
-    32: "Pant hits 128 as India pile up 629-6 in Wellington, their highest Test total in New Zealand.",
-    33: "Melbourne marks 70 years since the 1956 Olympics opened; swimmer Jon Henricks dies at 91.",
-    34: "Arevalo and Pavic meet Arribage and Olivetti in the ATP Finals doubles final.",
-}
+MEDIUMS = [
+    dict(n=4, place="HORMUZ", topic="SHIPPING",
+         head="Two tankers hit off Oman",
+         body="Two tankers hit near Khasab; no casualties.",
+         src="UKMTO · Reuters", tag="CONFIRMED",
+         scene=scene_tankers),
+    dict(n=5, place="GULF OF FINLAND", topic="WAR",
+         head="Sparta II still burns off Finland",
+         body="Ship hit by drones; 16 crew took to lifeboats.",
+         src="Reuters · CNN", tag="CONFIRMED",
+         scene=scene_sparta),
+    dict(n=6, place="PERU", topic="EARTHQUAKE",
+         head="Peru shaken by 6.7 quake",
+         body="6.7 quake near Junin; 128 homes damaged.",
+         src="USGS · IGP", tag="CONFIRMED",
+         scene=scene_quake),
+    dict(n=7, place="GAZA CITY", topic="CEASEFIRE",
+         head="Gaza aid van hit; three killed",
+         body="Drone strike kills three in Gaza City.",
+         src="Reuters · AFP", tag="CONFIRMED",
+         scene=scene_gaza_van),
+    dict(n=8, place="BASRA", topic="DISASTER",
+         head="Basra power-station fire kills four",
+         body="Gas pipeline fire; 800 MW plant shut down.",
+         src="Reuters · INA", tag="CONFIRMED",
+         scene=scene_basra),
+    dict(n=9, place="TEHRAN", topic="ENERGY",
+         head="Iran to ration electricity",
+         body="Rolling cuts of up to two hours a day.",
+         src="RFE/RL", tag="CONFIRMED",
+         scene=scene_rationing),
+    dict(n=10, place="WARSAW", topic="NATO",
+         head="Rutte: NATO stands with Poland",
+         body="NATO will defend every inch of Poland.",
+         src="Reuters · PAP", tag="CONFIRMED",
+         scene=scene_rutte),
+    dict(n=11, place="SUDAN", topic="WAR",
+         head="UN counts Sudan's drone dead",
+         body="UN counts 1,630 civilian drone deaths.",
+         src="UN · Amnesty", tag="CONFIRMED",
+         scene=scene_sudan),
+    dict(n=12, place="BRUSSELS", topic="TRADE",
+         head="EU and Indonesia sign trade deal",
+         body="Deal signed in Brussels after 10 years.",
+         src="Reuters · AFP", tag="CONFIRMED",
+         scene=scene_eu_indonesia),
+    dict(n=13, place="BELGIUM", topic="LABOUR",
+         head="Belgium braces for Monday strike",
+         body="Controllers join strike; flights halted.",
+         src="Brussels Airport · skeyes", tag="CONFIRMED",
+         scene=scene_belgium),
+]
 
-TOP_NUMBERS = (1, 6, 20)
-SMALL_NUMBERS = (2, 7, 10, 14, 18, 21, 23, 25, 28, 30)
-
-REGION_ORDER = ["MIDDLE EAST", "EUROPE", "ASIA-PACIFIC", "THE AMERICAS",
-                "AFRICA", "MARKETS & TECH", "SPORT"]
+ALSO = [
+    "France marches for a sixth Saturday (82,500)",
+    "Hong Kong votes for its Election Committee",
+    "Australia rejects US report on AUKUS",
+    "Mexico captures 'El Chapo Isidro'",
+    "Bolsonaro taken to intensive care",
+    "Boat capsizes in Nigeria, 24 dead",
+    "Bitcoin claws back above $60,000",
+    "England rout the All Blacks 37-12",
+    "Jordan shoots down five missiles",
+    "Lebanon marks 83 years of independence",
+    "Denmark expels Russian defence attache",
+    "Estonia to shut its Russia border crossings",
+    "Double-tap strike hits Kryvyi Rih",
+    "BepiColombo enters orbit around Mercury",
+    "Nepal's PM arrives in Delhi",
+    "Cyclone Akvan grounds flights at Ranchi",
+    "Modi opens Nitish Setu bridge",
+    "Verstappen inherits Las Vegas pole",
+    "Missouri approves $7.25bn Roundup deal",
+    "25 deportees from the US land in Liberia",
+    "FBI probes hack of its crime database",
+    "Russia says it downed 275 drones overnight",
+]
 
 STATS = [
-    ("34", "STORIES IN THIS EDITION"),
-    ("7", "REGIONS COVERED"),
-    ("24", "KILLED AS BOAT CAPSIZES IN NIGERIA"),
-    ("6.7", "PERU QUAKE, MAGNITUDE"),
-    ("82,500", "MARCH IN FRANCE"),
-    ("$60,000", "BITCOIN REBOUNDS"),
+    ("400+", "drones fired at Ukraine"),
+    ("2", "tankers hit off Oman"),
+    ("6.7", "Peru quake magnitude"),
+    ("24", "killed as boat capsizes in Nigeria"),
+    ("82,500", "march in France"),
+    ("$60,000", "bitcoin rebounds"),
 ]
 
-DATE_CHECK = ("Left out on purpose: the Trump-Xi-Putin summit in Shenzhen "
-              "(19 Nov) - the Kerch Bridge strikes (earlier in the week) - "
-              "the ICJ ruling on Myanmar (19 Nov) - Voyager 1 reaching one "
-              "light-day (18 Nov) - the Wall Street sell-off (Fri 20 Nov).")
-
-# Simplified continent outlines, in fractions of the map area.
-CONTINENTS = [
-    [(0.02, 0.24), (0.07, 0.12), (0.15, 0.09), (0.23, 0.14), (0.27, 0.22),
-     (0.25, 0.30), (0.19, 0.33), (0.16, 0.44), (0.10, 0.42), (0.05, 0.33)],
-    [(0.29, 0.05), (0.34, 0.04), (0.35, 0.11), (0.30, 0.12)],
-    [(0.23, 0.50), (0.29, 0.45), (0.35, 0.50), (0.36, 0.62), (0.32, 0.76),
-     (0.28, 0.82), (0.25, 0.66), (0.22, 0.56)],
-    [(0.46, 0.15), (0.51, 0.10), (0.57, 0.13), (0.59, 0.20), (0.55, 0.26),
-     (0.50, 0.27), (0.46, 0.21)],
-    [(0.46, 0.36), (0.53, 0.34), (0.60, 0.40), (0.59, 0.52), (0.55, 0.64),
-     (0.51, 0.66), (0.48, 0.50), (0.45, 0.42)],
-    [(0.60, 0.09), (0.74, 0.06), (0.87, 0.12), (0.95, 0.20), (0.92, 0.30),
-     (0.86, 0.38), (0.80, 0.34), (0.76, 0.42), (0.70, 0.44), (0.64, 0.34),
-     (0.59, 0.24)],
-    [(0.78, 0.47), (0.82, 0.45), (0.84, 0.50), (0.80, 0.52)],
-    [(0.85, 0.50), (0.88, 0.49), (0.89, 0.53), (0.86, 0.54)],
-    [(0.81, 0.64), (0.89, 0.62), (0.94, 0.68), (0.90, 0.75), (0.84, 0.73)],
-]
-MAP_LABELS = [
-    ("NORTH AMERICA", 0.07, 0.28), ("SOUTH AMERICA", 0.185, 0.585),
-    ("EUROPE", 0.47, 0.065), ("AFRICA", 0.50, 0.44),
-    ("ASIA", 0.70, 0.22), ("AUSTRALIA", 0.80, 0.69),
+REGIONS = [
+    ("MIDDLE EAST", 7),
+    ("EUROPE", 11),
+    ("ASIA-PACIFIC", 6),
+    ("THE AMERICAS", 6),
+    ("AFRICA", 3),
+    ("GLOBAL", 2),
 ]
 
+DATE_CHECK = (
+    "Left out as other days' news: the Trump-Xi-Putin summit in Shenzhen "
+    "(19 Nov) · the Kerch Bridge strikes (earlier in the week) · the ICJ "
+    "ruling on Myanmar (19 Nov) · Voyager 1 reaching one light-day "
+    "(18 Nov) · the Wall Street sell-off (Fri 20 Nov) · the Las Vegas "
+    "Grand Prix race (04:00 UTC, Mon 23 Nov) · the ATP Finals result "
+    "(played Sunday evening). The Russia barrage struck overnight into "
+    "Friday and is the weekend's biggest war story; the EU-Indonesia deal "
+    "was signed on Saturday."
+)
 
-def by_number(n):
-    for story in STORIES:
-        if story[0] == n:
-            return story
-    raise KeyError(n)
+PINS = [  # (story, true x, true y, label x, label y) in the map box.
+    # The true spot gets a small dot; the numbered pin sits at the label
+    # spot with a thin leader line.  Labels are spread so no two pins
+    # touch, even in the crowded Europe and Gulf clusters.
+    (1, 232, 48, 218, 34), (2, 170, 40, 150, 50), (3, 188, 22, 208, 16),
+    (4, 252, 56, 264, 68), (5, 186, 14, 196, 8), (6, 88, 108, 88, 108),
+    (7, 176, 50, 188, 60), (8, 224, 52, 206, 62), (9, 240, 42, 250, 28),
+    (10, 182, 24, 176, 30), (11, 180, 78, 180, 78),
+    (12, 158, 26, 136, 14), (13, 166, 20, 158, 8),
+]
+
+
+# --------------------------------------------------------------------- map
+def draw_map(cv, x, y, w, h):
+    cv.fill(x, y, w, h, SEA)
+    cv.rect(x, y, w, h, INK)
+    # graticule
+    for gx in range(x + 40, x + w, 40):
+        cv.vline(gx, y, h, (190, 214, 228))
+    for gy in range(y + 30, y + h, 30):
+        cv.hline(x, gy, w, (190, 214, 228))
+    # rough continents, drawn from simple polygons
+    land = [
+        [(x + 14, y + 26), (x + 38, y + 14), (x + 76, y + 12),
+         (x + 102, y + 22), (x + 96, y + 44), (x + 74, y + 58),
+         (x + 50, y + 68), (x + 28, y + 58), (x + 14, y + 44)],  # N America
+        [(x + 70, y + 80), (x + 96, y + 76), (x + 108, y + 94),
+         (x + 102, y + 124), (x + 88, y + 146), (x + 74, y + 124),
+         (x + 66, y + 100)],  # S America
+        [(x + 146, y + 16), (x + 166, y + 8), (x + 186, y + 12),
+         (x + 192, y + 28), (x + 174, y + 42), (x + 154, y + 40),
+         (x + 142, y + 28)],  # Europe
+        [(x + 146, y + 54), (x + 174, y + 48), (x + 198, y + 56),
+         (x + 206, y + 86), (x + 192, y + 116), (x + 168, y + 124),
+         (x + 150, y + 96), (x + 142, y + 70)],  # Africa
+        [(x + 196, y + 12), (x + 248, y + 6), (x + 298, y + 10),
+         (x + 312, y + 34), (x + 300, y + 58), (x + 268, y + 72),
+         (x + 228, y + 64), (x + 204, y + 48), (x + 192, y + 28)],  # Asia
+        [(x + 266, y + 106), (x + 298, y + 102), (x + 306, y + 122),
+         (x + 292, y + 138), (x + 270, y + 134)],  # Australia
+    ]
+    for poly in land:
+        cv.polygon(poly, LAND)
+        for (px0, py0), (px1, py1) in zip(poly, poly[1:] + poly[:1]):
+            cv.line(px0, py0, px1, py1, LAND_LINE)
+    # region labels, placed on clear sea or land (no EUROPE label: the
+    # cluster of pins there leaves no clear spot for it)
+    draw_text(cv, x + 28, y + 36, "NORTH AMERICA", "r12", GREY)
+    draw_text(cv, x + 58, y + 128, "SOUTH AMERICA", "r12", GREY)
+    draw_text(cv, x + 156, y + 92, "AFRICA", "r12", GREY)
+    draw_text(cv, x + 256, y + 44, "ASIA", "r12", GREY)
+    draw_text(cv, x + 260, y + 142, "AUSTRALIA", "r12", GREY)
+    # numbered pins with leader lines to their true spots
+    for n, tx, ty, lx, ly in PINS:
+        if (tx, ty) != (lx, ly):
+            cv.line(x + tx, y + ty, x + lx, y + ly, GREY)
+            cv.circle(x + tx, y + ty, 2, RED)
+        cv.circle(x + lx, y + ly, 6, RED)
+        cv.circle(x + lx, y + ly, 6, INK)
+        label = str(n)
+        tw = text_width(label, "b12")
+        draw_text(cv, x + lx - tw // 2, y + ly - 6, label, "b12",
+                  (255, 255, 255))
 
 
 # ------------------------------------------------------------------ layout
-def draw_top_panel(cv, story, x, y, w, h, tint):
-    n, region, headline, body, source, pic, _, _ = story
-    cv.rect(x, y, w, h, PAPER)
-    cv.rect_outline(x, y, w, h, INK, 1)
-    cv.rect(x + 1, y + 1, w - 2, 80, tint)
-    draw_pic(cv, pic, x + (w - 64) // 2, y + 8, 64, INK, RED)
-    draw_text(cv, x + 8, y + 88, region + " - LEAD STORY", RED, "B", 9)
-    draw_wrapped(cv, x + 8, y + 104, headline, INK, "B", 13, w - 16, 17)
-    draw_wrapped(cv, x + 8, y + 140, body, INK, "R", 10, w - 16, 13)
-    draw_text(cv, x + 8, y + h - 14, "Sources: " + source, GREY, "R", 8)
+def _centred(cv, y, text, name, color, scale=1):
+    tw = text_width(text, name, scale)
+    draw_text(cv, (W - tw) // 2, y, text, name, color, scale)
 
 
-def draw_small_panel(cv, story, x, y, w, h):
-    n, region, headline, body, source, pic, _, _ = story
-    cv.rect(x, y, w, h, PAPER)
-    cv.rect_outline(x, y, w, h, INK, 1)
-    draw_pic(cv, pic, x + 6, y + 6, 44, INK, RED)
-    draw_wrapped(cv, x + 56, y + 8, headline, INK, "B", 10, w - 62, 12)
-    draw_wrapped(cv, x + 6, y + 56, body, INK, "R", 9, w - 12, 11)
-    draw_text(cv, x + 6, y + h - 13, region, GREY, "R", 8)
+def _panel_border(cv, x, y, w, h):
+    cv.rect(x, y, w, h, INK)
 
 
-def draw_map(cv, x, y, w, h):
-    cv.rect(x, y, w, h, SEA)
-    cv.rect_outline(x, y, w, h, INK, 1)
-    grid = (198, 214, 224)
-    for i in range(1, 6):
-        cv.vline(x + w * i // 6, y, y + h - 1, grid)
-    for i in range(1, 4):
-        cv.hline(x, x + w - 1, y + h * i // 4, grid)
-    for poly in CONTINENTS:
-        pts = [(x + int(u * w + 0.5), y + int(v * h + 0.5)) for u, v in poly]
-        cv.poly(pts, LAND)
-        cv.poly(pts, LAND_LINE, fill=False)
-    for label, u, v in MAP_LABELS:
-        draw_text(cv, x + int(u * w + 0.5), y + int(v * h + 0.5),
-                  label, GREY, "R", 8)
-    for n in list(TOP_NUMBERS) + list(SMALL_NUMBERS):
-        story = by_number(n)
-        _, _, _, _, _, _, mu, mv = story
-        px = x + int(mu * w + 0.5)
-        py = y + int(mv * h + 0.5)
-        cv.circle(px, py, 9, RED)
-        cv.circle(px, py, 9, PAPER, fill=False)
-        num = str(n)
-        draw_text(cv, px - text_width(num, "B", 9) // 2, py - 6,
-                  num, PAPER, "B", 9)
+def draw_lead(cv, x, y, w, h, story):
+    _panel_border(cv, x, y, w, h)
+    story["scene"](cv, x + 1, y + 1, w - 2, 88)
+    ky = y + 92
+    kicker = "%d · %s · %s" % (story["n"], story["place"], story["topic"])
+    draw_text(cv, x + 8, ky, kicker, "b12", RED)
+    hy = ky + 16
+    n_head = draw_wrapped(cv, x + 8, hy, story["head"], "b18", INK, 1,
+                          w - 16, 22)
+    by = hy + n_head * 22 + 4
+    n_body = draw_wrapped(cv, x + 8, by, story["body"], "r12", INK, 1,
+                          w - 16, 15)
+    sy = y + h - 14
+    draw_text(cv, x + 8, sy, story["src"], "r12", GREY)
+    tag = story["tag"]
+    tw = text_width(tag, "b12")
+    draw_text(cv, x + w - 8 - tw, sy, tag, "b12", RED)
+
+
+def draw_medium(cv, x, y, w, h, story):
+    _panel_border(cv, x, y, w, h)
+    story["scene"](cv, x + 1, y + 1, w - 2, 62)
+    # kicker banner
+    ky = y + 63
+    cv.fill(x + 1, ky, w - 2, 15, RED)
+    kicker = "%s · %s" % (story["place"], story["topic"])
+    draw_text(cv, x + 6, ky + 2, kicker, "b12", (255, 255, 255))
+    # number badge, top right of the scene
+    badge = str(story["n"])
+    cv.circle(x + w - 12, y + 12, 8, RED)
+    tw = text_width(badge, "b12")
+    draw_text(cv, x + w - 12 - tw // 2, y + 6, badge, "b12",
+              (255, 255, 255))
+    hy = ky + 18
+    n_head = draw_wrapped(cv, x + 6, hy, story["head"], "b12", INK, 1,
+                          w - 12, 15)
+    by = hy + n_head * 15 + 2
+    draw_wrapped(cv, x + 6, by, story["body"], "r12", INK, 1, w - 12, 14)
+    sy = y + h - 13
+    # source only: the red CONFIRMED tag (88px) does not fit next to any
+    # source string in a 192px panel, and a half-fitted tag looks broken
+    draw_text(cv, x + 6, sy, story["src"], "r12", GREY)
 
 
 def build():
     cv = Canvas(W, H, PAPER)
-    cv.rect_outline(3, 3, W - 6, H - 6, INK, 3)
-
-    # Masthead.
-    draw_text_centred(cv, W // 2, 14, "THE WORLD IN ONE DAY", INK, "B", 24)
-    draw_text_centred(cv, W // 2, 46, "Sunday 22 November 2026", INK, "B", 36)
-    draw_text_centred(cv, W // 2, 92,
-                      "Iran hits US bases in the Gulf  \u2022  COP31 nears a "
-                      "deal in Antalya  \u2022  Peru reels from a 6.7 quake",
-                      INK, "R", 12)
-    cv.hline(10, W - 10, 110, INK, 2)
-
-    # Stat strip.
-    cell = 1004 // 6
+    # masthead
+    draw_text(cv, 12, 8, "THE WORLD IN ONE DAY", "b12", RED)
+    right = "35 STORIES · 6 REGIONS · EVERY ONE DATED SUNDAY 22 NOVEMBER 2026"
+    tw = text_width(right, "r12")
+    draw_text(cv, W - 12 - tw, 8, right, "r12", INK)
+    cv.fill(12, 26, W - 24, 2, INK)
+    # date
+    _centred(cv, 34, "Sunday 22 November 2026", "b40", INK)
+    _centred(cv, 82, "Iran hits US bases in the Gulf · COP31 nears a deal · "
+                     "Russia fires 400 drones at Ukraine", "r12", INK)
+    cv.fill(12, 102, W - 24, 1, INK)
+    cv.fill(12, 105, W - 24, 1, INK)
+    # stat strip
+    cell_w = (W - 24) // 6
     for i, (num, label) in enumerate(STATS):
-        cx = 10 + cell * i + cell // 2
-        draw_text_centred(cv, cx, 118, num, INK, "B", 20)
-        draw_text_centred(cv, cx, 143, label, GREY, "R", 8)
+        cx0 = 12 + i * cell_w
+        _centred_num = text_width(num, "b28")
+        draw_text(cv, cx0 + (cell_w - _centred_num) // 2, 112, num, "b28",
+                  INK)
+        lab_lines = wrap(label, "r12", 1, cell_w - 12)
+        for j, line in enumerate(lab_lines[:2]):
+            lw = text_width(line, "r12")
+            draw_text(cv, cx0 + (cell_w - lw) // 2, 142 + j * 14, line,
+                      "r12", GREY)
         if i:
-            cv.vline(10 + cell * i, 116, 152, LIGHT, 1)
-    cv.hline(10, W - 10, 154, LIGHT, 1)
-
-    # Region bar.
-    counts = {}
-    for story in STORIES:
-        counts[story[1]] = counts.get(story[1], 0) + 1
-    seg_w = [143, 143, 143, 144, 143, 144, 144]
-    rx = 10
-    for name, sw in zip(REGION_ORDER, seg_w):
-        cv.rect(rx, 158, sw, 22, REGION_COLOURS[name])
-        draw_text_centred(cv, rx + sw // 2, 164,
-                          name + " " + str(counts[name]), PAPER, "B", 11)
-        rx += sw
-    cv.hline(10, W - 10, 186, INK, 2)
-
-    # Three large panels.
-    tints = [(246, 232, 232), (232, 238, 246), (238, 243, 232)]
-    for i, n in enumerate(TOP_NUMBERS):
-        draw_top_panel(cv, by_number(n), 10 + i * 338, 192, 328, 196,
-                       tints[i])
-
-    # Ten smaller panels, two rows of five.
-    for i, n in enumerate(SMALL_NUMBERS):
-        row, col = divmod(i, 5)
-        draw_small_panel(cv, by_number(n), 10 + col * 202, 396 + row * 95,
-                         196, 89)
-
-    # Map (left) and the numbered list (right).
-    draw_text(cv, 10, 588, "WHERE IT HAPPENED - 13 PLACES ON THE MAP",
-              INK, "B", 11)
-    draw_map(cv, 10, 606, 456, 278)
-    draw_text(cv, 10, 890, "Pins 1-13 mark the front-page stories. "
-              "Map not to scale.", GREY, "R", 8)
-    draw_text(cv, 474, 588, "ALSO ON SUNDAY 22 NOVEMBER - 21 MORE STORIES",
-              INK, "B", 11)
-    also_numbers = sorted(ALSO.keys())
-    for i, n in enumerate(also_numbers):
-        yy = 610 + i * 14
-        draw_text(cv, 474, yy, str(n) + ".", RED, "B", 10)
-        draw_text(cv, 500, yy, ALSO[n], INK, "R", 10)
-
-    # Date check.
-    cv.rect(10, 922, 1004, 48, (246, 243, 235))
-    cv.rect_outline(10, 922, 1004, 48, INK, 1)
-    draw_text(cv, 18, 928, "DATE CHECK - NOT SUNDAY'S NEWS", RED, "B", 10)
-    draw_wrapped(cv, 18, 942, DATE_CHECK, INK, "R", 9, 988, 11)
-
-    # Footer.
-    draw_text_centred(cv, W // 2, 978,
-                      "Every story here happened, or was first reported, on "
-                      "Sunday 22 November 2026.", GREY, "R", 8)
-    draw_text_centred(cv, W // 2, 991,
-                      "Sources: Reuters, Associated Press, AFP, Al Jazeera, "
-                      "BBC, The Times, ESA, ATP Tour, Formula 1, PHIVOLCS, "
-                      "NEMA, Press Information Bureau of India.",
-                      GREY, "R", 8)
-    draw_text_centred(cv, W // 2, 1004,
-                      "Drawn by a Python program using only the standard "
-                      "library. No photographs: every picture is drawn from "
-                      "lines and shapes.", GREY, "R", 8)
+            cv.vline(cx0, 112, 44, LIGHT)
+    cv.fill(12, 158, W - 24, 1, INK)
+    # region bar
+    total = sum(c for _, c in REGIONS)
+    rx = 12
+    for name, count in REGIONS:
+        seg_w = (W - 24) * count // total
+        col = REGION_COLOURS[name]
+        cv.fill(rx, 162, seg_w, 16, col)
+        label = "%s %d" % (name, count)
+        lw = text_width(label, "b12")
+        if lw <= seg_w - 6:
+            draw_text(cv, rx + (seg_w - lw) // 2, 165, label, "b12",
+                      (255, 255, 255))
+        rx += seg_w
+    # leads
+    lead_w = 326
+    for i, story in enumerate(LEADS):
+        draw_lead(cv, 12 + i * (lead_w + 11), 182, lead_w, 218, story)
+    # mediums: two rows of five
+    med_w = 192
+    for row in range(2):
+        for col in range(5):
+            story = MEDIUMS[row * 5 + col]
+            draw_medium(cv, 12 + col * (med_w + 10), 404 + row * 160,
+                        med_w, 156, story)
+    # section headers
+    draw_text(cv, 12, 724, "WHERE IT HAPPENED · 13 PLACES ON THE MAP",
+              "b12", INK)
+    draw_text(cv, 344, 724, "ALSO ON SUNDAY 22 NOVEMBER — 22 MORE STORIES",
+              "b12", RED)
+    # map and also list
+    draw_map(cv, 12, 740, 320, 164)
+    draw_text(cv, 12, 890, "Pins 1-13 mark the front-page stories.",
+              "r12", GREY)
+    for i, item in enumerate(ALSO):
+        col = i // 11
+        row = i % 11
+        ix = 344 + col * 334
+        iy = 740 + row * 15
+        num = "%d " % (14 + i)
+        draw_text(cv, ix, iy, num, "b12", RED)
+        draw_text(cv, ix + text_width(num, "b12"), iy, item, "r12", INK)
+    # date check
+    cv.rect(12, 910, W - 24, 64, RED)
+    draw_text(cv, 20, 916, "DATE CHECK — LEFT OUT AS OTHER DAYS' NEWS",
+              "b12", RED)
+    draw_wrapped(cv, 20, 932, DATE_CHECK, "r12", INK, 1, W - 40, 14)
+    # footer
+    _centred(cv, 982, "Every story here happened, or was first reported, on "
+                      "Sunday 22 November 2026.", "r12", INK)
+    _centred(cv, 998, "Sources: Reuters, AP, AFP, Al Jazeera, BBC, USGS, "
+                      "ESA, ATP Tour, Formula 1. Original drawings.",
+              "r12", GREY)
     return cv
 
 
@@ -1090,6 +1011,7 @@ def main():
         os.path.abspath(__file__))
     os.makedirs(out_dir, exist_ok=True)
     write_png(os.path.join(out_dir, "entry.png"), build())
+    print("wrote", os.path.join(out_dir, "entry.png"))
 
 
 if __name__ == "__main__":
